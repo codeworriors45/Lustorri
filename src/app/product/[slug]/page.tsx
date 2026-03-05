@@ -147,7 +147,7 @@ export default function ProductDetailPage() {
                 {/* Actions */}
                 <div className="absolute top-4 right-4 flex flex-col gap-2">
                   <motion.button
-                    onClick={toggleWishlist}
+                    onClick={() => toggleWishlist()}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     className={cn(
