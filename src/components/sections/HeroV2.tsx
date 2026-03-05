@@ -132,8 +132,8 @@ const polaroidMoments: PolaroidMoment[] = [
   },
 ];
 
-// Scattered positions for each card index (matches old project pattern)
-const TRANSFORMS = [
+// Scattered positions — desktop
+const TRANSFORMS_DESKTOP = [
   "translate(-50%, -50%) rotate(-4deg) scale(1)",
   "translate(-50%, -50%) rotate(6deg) scale(0.98) translateX(220px) translateY(-35px)",
   "translate(-50%, -50%) rotate(-8deg) scale(0.97) translateX(-240px) translateY(45px)",
@@ -141,6 +141,17 @@ const TRANSFORMS = [
   "translate(-50%, -50%) rotate(-6deg) scale(0.95) translateX(-140px) translateY(-55px)",
   "translate(-50%, -50%) rotate(7deg) scale(0.94) translateX(350px) translateY(30px)",
   "translate(-50%, -50%) rotate(-5deg) scale(0.93) translateX(-360px) translateY(-20px)",
+];
+
+// Scattered positions — mobile (tighter spread)
+const TRANSFORMS_MOBILE = [
+  "translate(-50%, -50%) rotate(-3deg) scale(1)",
+  "translate(-50%, -50%) rotate(5deg) scale(0.95) translateX(80px) translateY(-20px)",
+  "translate(-50%, -50%) rotate(-6deg) scale(0.93) translateX(-90px) translateY(25px)",
+  "translate(-50%, -50%) rotate(3deg) scale(0.91) translateX(50px) translateY(55px)",
+  "translate(-50%, -50%) rotate(-4deg) scale(0.89) translateX(-60px) translateY(-35px)",
+  "translate(-50%, -50%) rotate(5deg) scale(0.87) translateX(110px) translateY(15px)",
+  "translate(-50%, -50%) rotate(-3deg) scale(0.85) translateX(-120px) translateY(-10px)",
 ];
 
 // Heart animation variants for wider spread
@@ -170,6 +181,17 @@ export function HeroV2() {
   const [entrancePhase, setEntrancePhase] = useState<
     "stacking" | "spreading" | "complete"
   >("stacking");
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Responsive breakpoint listener
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const TRANSFORMS = isMobile ? TRANSFORMS_MOBILE : TRANSFORMS_DESKTOP;
 
   // Core refs
   const autoPlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -734,7 +756,7 @@ export function HeroV2() {
 
       {/* Polaroid Stack */}
       <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-36 md:pt-46 pb-8">
-        <div className="relative mx-auto" style={{ height: "clamp(450px, 60vh, 700px)" }}>
+        <div className="relative mx-auto" style={{ height: "clamp(350px, 55vh, 700px)" }}>
           {/* Left arrow — Enhancement 3: Magnetic */}
           <div className="absolute top-1/2 -translate-y-1/2 left-2 sm:left-5 z-20">
             <button
@@ -758,13 +780,16 @@ export function HeroV2() {
           {moments.map((moment, index) => {
             const universe = getUniverseById(moment.universeId);
             const isHovered = hoveredId === moment.id;
+            // Hide far cards on mobile
+            const maxVisible = isMobile ? 4 : 7;
+            if (index >= maxVisible) return null;
 
             return (
               <div
                 key={moment.id}
                 className="absolute top-1/2 left-1/2"
                 style={{
-                  zIndex: moment.id === activeClickId ? 50 : 40 - index,
+                  zIndex: moment.id === activeClickId ? 30 : 20 - index,
                   transform:
                     entrancePhase === "stacking"
                       ? "translate(-50%, -50%)"
@@ -776,7 +801,7 @@ export function HeroV2() {
                         ? 1
                         : index <= 2
                           ? 0.95
-                          : 0.88,
+                          : 0.85,
                   transition:
                     entrancePhase === "stacking"
                       ? "none"
@@ -806,7 +831,7 @@ export function HeroV2() {
                   {/* Polaroid frame */}
                   <div
                     className={cn(
-                      "relative w-[260px] sm:w-[300px] bg-[#FAFAF8] p-3 sm:p-4 pb-8 sm:pb-10",
+                      "relative w-[200px] sm:w-[260px] md:w-[300px] bg-[#FAFAF8] p-2 sm:p-3 md:p-4 pb-6 sm:pb-8 md:pb-10",
                       "shadow-[0_8px_30px_rgba(74,55,40,0.15),0_2px_8px_rgba(74,55,40,0.1)]",
                       "transition-all duration-300",
                       isHovered &&
@@ -816,7 +841,7 @@ export function HeroV2() {
                     {/* Image */}
                     <div
                       className="relative w-full overflow-hidden"
-                      style={{ height: "clamp(280px, 35vh, 340px)" }}
+                      style={{ height: "clamp(200px, 30vh, 340px)" }}
                     >
                       <Image
                         src={moment.image}
@@ -857,7 +882,7 @@ export function HeroV2() {
                     {/* Caption + Likes */}
                     <div className="mt-3 flex flex-col gap-2">
                       <p
-                        className="text-center text-sm text-foreground/80 italic"
+                        className="text-center text-xs sm:text-sm text-foreground/80 italic"
                         style={{ fontFamily: "'Segoe Script', 'Brush Script MT', cursive" }}
                       >
                         {moment.caption}
@@ -950,13 +975,13 @@ export function HeroV2() {
         </div>
 
         {/* Hero content below */}
-        <div className="flex flex-col items-center text-center gap-5 mt-24 max-w-[800px] mx-auto">
+        <div className="flex flex-col items-center text-center gap-3 sm:gap-5 mt-12 sm:mt-24 max-w-[800px] mx-auto">
           {/* Enhancement 6: AnimatedText Headline */}
           <AnimatedText
             as="h1"
             animation="split"
             delay={1.8}
-            className="font-display text-4xl sm:text-5xl md:text-[4rem] font-semibold leading-[1.15] text-foreground tracking-tight"
+            className="font-display text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-semibold leading-[1.15] text-foreground tracking-tight px-2"
           >
             Jewelry for the moments you never forget.
           </AnimatedText>

@@ -128,14 +128,14 @@ const shopData = {
 };
 
 const navLinksLeft = [
-  { name: "Universes", href: "/universes", hasMegaMenu: true, menuType: "universes" },
-  { name: "Shop", href: "/shop", hasMegaMenu: true, menuType: "shop" },
-  { name: "Love Stories", href: "/stories", hasMegaMenu: false },
+  { name: "Universes", href: "/universes", hasMegaMenu: true, menuType: "universes" as const },
+  { name: "Shop", href: "/shop", hasMegaMenu: true, menuType: "shop" as const },
+  { name: "Love Stories", href: "/stories", hasMegaMenu: false, menuType: null },
 ];
 
 const navLinksRight = [
-  { name: "The Card", href: "/the-card", hasMegaMenu: false },
-  { name: "Our Story", href: "/about", hasMegaMenu: false },
+  { name: "The Card", href: "/the-card", hasMegaMenu: false, menuType: null },
+  { name: "Our Story", href: "/about", hasMegaMenu: false, menuType: null },
 ];
 
 const allNavLinks = [...navLinksLeft, ...navLinksRight];
