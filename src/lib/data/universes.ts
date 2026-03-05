@@ -1,0 +1,148 @@
+import { Universe } from "@/types/product";
+
+export const universes: Universe[] = [
+  // Moment Universes
+  {
+    id: "pulse",
+    slug: "the-pulse",
+    name: "The Pulse",
+    type: "moment",
+    tagline: "The first electric touch that made your heart race",
+    description: "Capture the moment when your heart first skipped a beat. The Pulse collection immortalizes that electric sensation of first touch — when skin meets skin and everything changes.",
+    story: "Every piece in The Pulse universe carries the heartbeat of that first moment — the nervous energy, the anticipation, the electricity that shot through your veins when they touched you for the first time.",
+    heroImage: "/images/universes/pulse-hero.jpg",
+    coverImage: "/images/universes/pulse-cover.jpg",
+    color: "#A22C3E",
+    productCount: 24,
+  },
+  {
+    id: "bite",
+    slug: "the-bite",
+    name: "The Bite",
+    type: "moment",
+    tagline: "Fierce desire that leaves its mark",
+    description: "For love that's passionate, consuming, and unapologetically intense. The Bite collection celebrates desire that cannot be contained.",
+    story: "Some love is soft. Some love bites. This collection is for those who love with teeth — who leave marks, who consume each other, who turn passion into permanent impression.",
+    heroImage: "/images/universes/bite-hero.jpg",
+    coverImage: "/images/universes/bite-cover.jpg",
+    color: "#8B1538",
+    productCount: 18,
+  },
+  {
+    id: "vein",
+    slug: "the-vein",
+    name: "The Vein",
+    type: "moment",
+    tagline: "Love that runs through your entire being",
+    description: "When love becomes part of your bloodstream. The Vein collection represents love so deep it flows through every part of you.",
+    story: "Like blood through veins, this love is essential. It reaches every corner of your being, sustaining you, defining you. You cannot separate yourself from it.",
+    heroImage: "/images/universes/vein-hero.jpg",
+    coverImage: "/images/universes/vein-cover.jpg",
+    color: "#6C4B3D",
+    productCount: 20,
+  },
+  {
+    id: "drown",
+    slug: "the-drown",
+    name: "The Drown",
+    type: "moment",
+    tagline: "Surrendering completely to someone",
+    description: "For the moment you let go and allowed yourself to be submerged in another person entirely.",
+    story: "Drowning isn't always dark. Sometimes it's the most beautiful surrender — letting yourself sink into someone, letting them become your air, your everything.",
+    heroImage: "/images/universes/drown-hero.jpg",
+    coverImage: "/images/universes/drown-cover.jpg",
+    color: "#2D4A6B",
+    productCount: 16,
+  },
+  // Identity Universes
+  {
+    id: "eclipse",
+    slug: "the-eclipse",
+    name: "The Eclipse",
+    type: "identity",
+    tagline: "For opposites drawn together by gravity stronger than reason",
+    description: "When two different worlds align to create something rare and beautiful. The Eclipse collection celebrates love between opposites.",
+    story: "She was the sun. He was the moon. Alone, they ruled different skies. Together, they created the rarest phenomenon — a moment when differences don't divide but perfectly align.",
+    heroImage: "/images/universes/eclipse-hero.jpg",
+    coverImage: "/images/universes/eclipse-cover.jpg",
+    color: "#C4A968",
+    productCount: 22,
+  },
+  {
+    id: "melted-promise",
+    slug: "the-melted-promise",
+    name: "The Melted Promise",
+    type: "identity",
+    tagline: "For lovers who didn't fall in love, they dissolved into each other",
+    description: "When two people don't just come together but melt into one. Boundaries dissolve. Identities merge.",
+    story: "There was no moment of falling. Just a slow dissolving — two separate beings becoming something new, something shared, something that can never be separated again.",
+    heroImage: "/images/universes/melted-hero.jpg",
+    coverImage: "/images/universes/melted-cover.jpg",
+    color: "#B76E79",
+    productCount: 19,
+  },
+  {
+    id: "midnight-thread",
+    slug: "the-midnight-thread",
+    name: "The Midnight Thread",
+    type: "identity",
+    tagline: "For love born in darkness, raw and magnetic",
+    description: "Some love stories begin at midnight — in shadows, in secrets, in the raw honesty that only darkness allows.",
+    story: "They found each other when the world was asleep. In the quiet dark, they showed each other their truest selves. This love was born in midnight and it still carries that magnetic pull.",
+    heroImage: "/images/universes/midnight-hero.jpg",
+    coverImage: "/images/universes/midnight-cover.jpg",
+    color: "#1A1512",
+    productCount: 17,
+  },
+  {
+    id: "sin-curve",
+    slug: "the-sin-curve",
+    name: "The Sin Curve",
+    type: "identity",
+    tagline: "For those who chose feeling over fear",
+    description: "When love defies logic, when passion overrides caution. The Sin Curve celebrates those who followed their hearts into the unknown.",
+    story: "They said it was wrong. They said it wouldn't last. But you chose to feel anyway — to curve away from the straight path and into something real, something alive, something worth every risk.",
+    heroImage: "/images/universes/sin-curve-hero.jpg",
+    coverImage: "/images/universes/sin-curve-cover.jpg",
+    color: "#9B2335",
+    productCount: 26,
+  },
+  {
+    id: "scar-line",
+    slug: "the-scar-line",
+    name: "The Scar Line",
+    type: "identity",
+    tagline: "For love that survived imperfection and became eternal",
+    description: "Beauty born from wounds. The Scar Line honors relationships that broke, healed, and emerged stronger — marked but undefeated.",
+    story: "Every scar tells a story of survival. Your love carries marks — of fights, of tears, of almost-endings. But you're still here. Still together. The scars aren't flaws; they're proof.",
+    heroImage: "/images/universes/scar-line-hero.jpg",
+    coverImage: "/images/universes/scar-line-cover.jpg",
+    color: "#8B7355",
+    productCount: 24,
+  },
+  {
+    id: "ember",
+    slug: "the-ember",
+    name: "The Ember",
+    type: "identity",
+    tagline: "For flames that never die, just burn quieter",
+    description: "Celebrating love that has weathered time — not dimmed but transformed into something deeper, warmer, eternal.",
+    story: "The wildfire has passed. What remains is more precious — a steady warmth, a glow that needs no fuel, a fire that has learned to burn forever.",
+    heroImage: "/images/universes/ember-hero.jpg",
+    coverImage: "/images/universes/ember-cover.jpg",
+    color: "#D4652A",
+    productCount: 21,
+  },
+];
+
+export function getUniverseBySlug(slug: string): Universe | undefined {
+  return universes.find((u) => u.slug === slug);
+}
+
+export function getUniverseById(id: string): Universe | undefined {
+  return universes.find((u) => u.id === id);
+}
+
+export function getUniversesByType(type: "moment" | "identity"): Universe[] {
+  return universes.filter((u) => u.type === type);
+}

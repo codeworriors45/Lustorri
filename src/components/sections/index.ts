@@ -1,0 +1,10 @@
+export { Hero } from "./Hero";
+export { HeroV2 } from "./HeroV2";
+export { UniverseShowcase } from "./UniverseShowcase";
+export { EngravedCard } from "./EngravedCard";
+export { HowItWorks } from "./HowItWorks";
+export { LoveStories } from "./LoveStories";
+export { Testimonials } from "./Testimonials";
+export { Newsletter } from "./Newsletter";
+export { BrandPhilosophy } from "./BrandPhilosophy";
+export { UniverseTypes } from "./UniverseTypes";
