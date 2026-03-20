@@ -2,8 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -15,7 +13,7 @@ import {
 import { ProductCard, ProductFilters } from "@/components/shop";
 import { LuxuryDiamond } from "@/components/common/LuxuryDiamond";
 import { products } from "@/lib/data/products";
-import { JewelryCategory, MetalType, Product } from "@/types/product";
+import { JewelryCategory, MetalType } from "@/types/product";
 
 interface FilterState {
   categories: JewelryCategory[];
@@ -96,9 +94,7 @@ export default function ShopPage() {
   }, [filters]);
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-background pt-20 lg:pt-[120px]">
+    <main className="min-h-screen bg-background pt-20 lg:pt-[120px]">
         {/* Hero Section */}
         <section className="relative py-12 sm:py-16 lg:py-28 bg-linear-to-b from-muted/50 to-background overflow-hidden">
           {/* Background Elements */}
@@ -230,8 +226,6 @@ export default function ShopPage() {
             </div>
           </div>
         </section>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }

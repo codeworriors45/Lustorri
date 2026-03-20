@@ -15,8 +15,6 @@ import {
   ChevronRight,
   Sparkles,
 } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { ProductCard } from "@/components/shop";
 import { LuxuryDiamond } from "@/components/common/LuxuryDiamond";
 import { TrustBadges } from "@/components/common/TrustBadges";
@@ -29,7 +27,7 @@ import { getMetalDisplayName, type ProductVariant } from "@/types/product";
 import { useCart } from "@/store/useCartStore";
 import { useWishlist } from "@/hooks/useWishlist";
 import { cn } from "@/lib/utils";
-import { iconSpringAnimation, buttonAnimation } from "@/lib/animations/variants";
+import { iconSpringAnimation } from "@/lib/animations/variants";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -47,7 +45,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (product && product.variants.length > 0) {
-      setSelectedVariant(product.variants.find((v) => v.inStock) || product.variants[0]);
+      setSelectedVariant(product.variants.find((v) => v.inStock) || product.variants[0]); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [product]);
 
@@ -67,9 +65,7 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <>
-        <Header />
-        <main className="min-h-screen pt-20 lg:pt-30 flex items-center justify-center">
+      <main className="min-h-screen pt-20 lg:pt-30 flex items-center justify-center">
           <div className="text-center">
             <LuxuryDiamond id="pdp-empty" className="w-16 h-16 mx-auto mb-6 opacity-30" />
             <p className="h1 text-foreground mb-4">Product not found</p>
@@ -77,9 +73,7 @@ export default function ProductDetailPage() {
               Return to Shop
             </Link>
           </div>
-        </main>
-        <Footer />
-      </>
+      </main>
     );
   }
 
@@ -88,9 +82,7 @@ export default function ProductDetailPage() {
     .slice(0, 4);
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-background pt-20 lg:pt-30">
+    <main className="min-h-screen bg-background pt-20 lg:pt-30">
         {/* Breadcrumb */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <nav className="flex items-center gap-2 text-sm font-sans text-muted-foreground">
@@ -428,8 +420,6 @@ export default function ProductDetailPage() {
             </div>
           </section>
         )}
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }

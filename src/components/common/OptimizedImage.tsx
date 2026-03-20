@@ -45,7 +45,7 @@ export function OptimizedImage({
   // Intersection Observer for lazy loading
   useEffect(() => {
     if (priority) {
-      setIsInView(true);
+      setIsInView(true); // eslint-disable-line react-hooks/set-state-in-effect
       return;
     }
 

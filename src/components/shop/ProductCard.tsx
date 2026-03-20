@@ -11,7 +11,6 @@ import { useCart } from "@/store/useCartStore";
 import { useWishlist } from "@/hooks/useWishlist";
 import { cn } from "@/lib/utils";
 import { DEFAULT_BLUR_DATA_URL } from "@/lib/utils/image";
-import { iconSpringAnimation, createStaggerDelay } from "@/lib/animations/variants";
 import gsap from "gsap";
 
 interface ProductCardProps {

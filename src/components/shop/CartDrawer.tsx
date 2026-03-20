@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/useCartStore";
 import { getProductById } from "@/lib/data/products";
 import { formatPrice, getMetalDisplayName } from "@/types/product";
-import { cn } from "@/lib/utils";
 
 export function CartDrawer() {
   const {

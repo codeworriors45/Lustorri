@@ -146,7 +146,7 @@ function HeaderActions() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   return (
@@ -237,52 +237,192 @@ export function HeaderV2() {
           : "bg-background/80 backdrop-blur-sm"
           }`}
       >
-        {/* Top Bar - Brand Messaging */}
-        <div className="hidden lg:block bg-foreground text-background text-xs py-2.5">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-gold" />
-              <span className="font-serif italic">Where Lust Meets Love</span>
-            </div>
-            <div className="flex items-center gap-6">
-              <span className="text-background/70">Every piece tells your story</span>
-              <span className="text-gold">|</span>
-              <Link href="/the-card" className="hover:text-gold transition-colors flex items-center gap-1">
-                <span>Free Engraved Story Card</span>
+        {/* ===== MOBILE Header (< 640px) ===== */}
+        <div className="sm:hidden px-4">
+          <div className="relative flex items-center justify-between h-12">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 text-foreground hover:text-primary transition-colors z-10"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+            <Link href="/account" className="z-10">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className="p-2 text-foreground/80 hover:text-primary transition-colors"
+                aria-label="Account"
+              >
+                <User size={20} />
+              </motion.div>
+            </Link>
+          </div>
+
+          {/* Mobile notch */}
+          <div className="relative overflow-visible -mx-4" style={{ height: '0px' }}>
+            <svg
+              className="absolute top-0 left-0 w-full pointer-events-none"
+              height="30"
+              viewBox="0 0 400 30"
+              preserveAspectRatio="none"
+              fill="none"
+            >
+              <path
+                d="M135,-1 L135,0.5 C139,0.5 142,3.5 142,8 L142,20 C142,24.5 145.5,28.5 150,28.5 L250,28.5 C254.5,28.5 258,24.5 258,20 L258,8 C258,3.5 261,0.5 265,0.5 L265,-1 Z"
+                fill="var(--color-background, #F9F5EF)"
+                fillOpacity={isScrolled ? 0.95 : 0.8}
+                className="transition-all duration-500"
+              />
+              <path
+                d="M0,0.5 L135,0.5 C139,0.5 142,3.5 142,8 L142,20 C142,24.5 145.5,28.5 150,28.5 L250,28.5 C254.5,28.5 258,24.5 258,20 L258,8 C258,3.5 261,0.5 265,0.5 L400,0.5"
+                stroke="var(--color-border, #e5e5e5)"
+                strokeWidth="1"
+                fill="none"
+                vectorEffect="non-scaling-stroke"
+              />
+              <defs>
+                <linearGradient id="movingLineMobile" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="0">
+                  <stop offset="0%" stopColor="var(--color-primary, #8B6F4E)" stopOpacity="0" />
+                  <stop offset="40%" stopColor="var(--color-primary, #8B6F4E)" stopOpacity="0.7" />
+                  <stop offset="50%" stopColor="var(--color-primary, #8B6F4E)" stopOpacity="1" />
+                  <stop offset="60%" stopColor="var(--color-primary, #8B6F4E)" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="var(--color-primary, #8B6F4E)" stopOpacity="0" />
+                  <animateTransform
+                    attributeName="gradientTransform"
+                    type="translate"
+                    from="-100 0"
+                    to="500 0"
+                    dur="4s"
+                    repeatCount="indefinite"
+                  />
+                </linearGradient>
+              </defs>
+              <path
+                d="M0,0.5 L135,0.5 C139,0.5 142,3.5 142,8 L142,20 C142,24.5 145.5,28.5 150,28.5 L250,28.5 C254.5,28.5 258,24.5 258,20 L258,8 C258,3.5 261,0.5 265,0.5 L400,0.5"
+                stroke="url(#movingLineMobile)"
+                strokeWidth="2"
+                fill="none"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+            <motion.div
+              initial={{ y: -40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 0.7 }}
+              className="absolute left-1/2 -translate-x-1/2 -top-1.5 flex items-center justify-center z-10 pointer-events-auto"
+              style={{ width: '160px', height: '30px' }}
+            >
+              <Link href="/">
+                <Image
+                  src="/images/logo/Logo.png"
+                  alt="Lustorri"
+                  width={130}
+                  height={42}
+                  className="h-7 w-auto object-contain"
+                  priority
+                />
               </Link>
-            </div>
+            </motion.div>
           </div>
         </div>
 
-        {/* Mobile Header */}
-        <div className="lg:hidden max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-20">
+        {/* ===== TABLET Header (640px – 1024px) ===== */}
+        <div className="hidden sm:block lg:hidden px-6">
+          <div className="relative flex items-center justify-between h-14">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-foreground hover:text-primary transition-colors"
+              className="p-2 text-foreground hover:text-primary transition-colors z-10"
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
-
-            <Link href="/">
-              <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
-                <Image
-                  src="/images/logo/Logo.png"
-                  alt="Lustorri"
-                  width={160}
-                  height={50}
-                  className="h-10 w-auto object-contain"
-                  priority
-                />
+            <Link href="/account" className="z-10">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className="p-2 text-foreground/80 hover:text-primary transition-colors"
+                aria-label="Account"
+              >
+                <User size={22} />
               </motion.div>
             </Link>
+          </div>
 
-            <HeaderActions />
+          {/* Tablet notch — wider viewBox so notch stays proportional */}
+          <div className="relative overflow-visible -mx-6" style={{ height: '0px' }}>
+            <svg
+              className="absolute top-0 left-0 w-full pointer-events-none"
+              height="34"
+              viewBox="0 0 800 34"
+              preserveAspectRatio="none"
+              fill="none"
+            >
+              <path
+                d="M325,-1 L325,0.5 C329,0.5 332,4 332,9.5 L332,24 C332,29 335.5,33 340,33 L460,33 C464.5,33 468,29 468,24 L468,9.5 C468,4 471,0.5 475,0.5 L475,-1 Z"
+                fill="var(--color-background, #F9F5EF)"
+                fillOpacity={isScrolled ? 0.95 : 0.8}
+                className="transition-all duration-500"
+              />
+              <path
+                d="M0,0.5 L325,0.5 C329,0.5 332,4 332,9.5 L332,24 C332,29 335.5,33 340,33 L460,33 C464.5,33 468,29 468,24 L468,9.5 C468,4 471,0.5 475,0.5 L800,0.5"
+                stroke="var(--color-border, #e5e5e5)"
+                strokeWidth="1"
+                fill="none"
+                vectorEffect="non-scaling-stroke"
+              />
+              <defs>
+                <linearGradient id="movingLineTablet" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="160" y2="0">
+                  <stop offset="0%" stopColor="var(--color-primary, #8B6F4E)" stopOpacity="0" />
+                  <stop offset="40%" stopColor="var(--color-primary, #8B6F4E)" stopOpacity="0.7" />
+                  <stop offset="50%" stopColor="var(--color-primary, #8B6F4E)" stopOpacity="1" />
+                  <stop offset="60%" stopColor="var(--color-primary, #8B6F4E)" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="var(--color-primary, #8B6F4E)" stopOpacity="0" />
+                  <animateTransform
+                    attributeName="gradientTransform"
+                    type="translate"
+                    from="-160 0"
+                    to="960 0"
+                    dur="4s"
+                    repeatCount="indefinite"
+                  />
+                </linearGradient>
+              </defs>
+              <path
+                d="M0,0.5 L325,0.5 C329,0.5 332,4 332,9.5 L332,24 C332,29 335.5,33 340,33 L460,33 C464.5,33 468,29 468,24 L468,9.5 C468,4 471,0.5 475,0.5 L800,0.5"
+                stroke="url(#movingLineTablet)"
+                strokeWidth="2"
+                fill="none"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+            <motion.div
+              initial={{ y: -40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: 0.7 }}
+              className="absolute left-1/2 -translate-x-1/2 -top-2 flex items-center justify-center z-10 pointer-events-auto"
+              style={{ width: '200px', height: '34px' }}
+            >
+              <Link href="/">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Image
+                    src="/images/logo/Logo.png"
+                    alt="Lustorri"
+                    width={180}
+                    height={56}
+                    className="h-10 w-auto object-contain"
+                    priority
+                  />
+                </motion.div>
+              </Link>
+            </motion.div>
           </div>
         </div>
 
-        {/* Desktop Header */}
+        {/* ===== DESKTOP Header (1024px+) ===== */}
         <div className="hidden lg:block px-8 xl:px-12">
           <div className="relative flex items-center" style={{ height: '52px' }}>
             {/* Left Navigation */}
@@ -416,9 +556,9 @@ export function HeaderV2() {
                   <Image
                     src="/images/logo/Logo.png"
                     alt="Lustorri"
-                    width={230}
-                    height={80}
-                    className="h-10 w-auto object-contain"
+                    width={180}
+                    height={60}
+                    className="h-13 w-auto object-contain"
                     priority
                   />
                 </motion.div>

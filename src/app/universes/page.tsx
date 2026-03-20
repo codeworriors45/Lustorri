@@ -3,19 +3,15 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Zap, Heart } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { LuxuryDiamond } from "@/components/common/LuxuryDiamond";
-import { universes, getUniversesByType } from "@/lib/data/universes";
+import { getUniversesByType } from "@/lib/data/universes";
 
 export default function UniversesPage() {
   const momentUniverses = getUniversesByType("moment");
   const identityUniverses = getUniversesByType("identity");
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-background pt-20 lg:pt-[120px]">
+    <main className="min-h-screen bg-background pt-20 lg:pt-[120px]">
         {/* Hero Section */}
         <section className="relative py-24 lg:py-32 bg-linear-to-b from-[#1a1512] to-[#0f0d0b] overflow-hidden">
           {/* Background Elements */}
@@ -301,8 +297,6 @@ export default function UniversesPage() {
             </Link>
           </div>
         </section>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }

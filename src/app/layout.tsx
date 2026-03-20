@@ -3,6 +3,8 @@ import { Playfair_Display, Cormorant_Garamond, Montserrat } from "next/font/goog
 import { defaultMetadata, organizationSchema, localBusinessSchema } from "@/lib/seo/config";
 import { SmoothScroll } from "@/components/providers";
 import { CartDrawer } from "@/components/shop";
+import { HeaderV2 } from "@/components/layout/HeaderV2";
+import { Footer } from "@/components/layout/Footer";
 import "./globals.css";
 import "./typography.css";
 
@@ -52,7 +54,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
+      <head suppressHydrationWarning>
         {/* Structured Data */}
         <script
           type="application/ld+json"
@@ -79,7 +81,9 @@ export default function RootLayout({
         className={`${cormorant.variable} ${playfair.variable} ${montserrat.variable} font-sans antialiased`}
       >
         <SmoothScroll>
+          <HeaderV2 />
           {children}
+          <Footer />
         </SmoothScroll>
         <CartDrawer />
       </body>

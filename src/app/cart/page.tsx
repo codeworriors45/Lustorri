@@ -5,8 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Trash2, ShoppingBag, Sparkles, ArrowRight, ArrowLeft } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { QuantitySelector } from "@/components/shop/QuantitySelector";
 import { TrustBadges } from "@/components/common/TrustBadges";
@@ -15,7 +13,6 @@ import { useCart } from "@/store/useCartStore";
 import { getProductById } from "@/lib/data/products";
 import { formatPrice } from "@/lib/utils/formatting";
 import { getMetalDisplayName } from "@/types/product";
-import { scrollFadeInUp } from "@/lib/animations/variants";
 
 export default function CartPage() {
   const {
@@ -32,9 +29,7 @@ export default function CartPage() {
   const total = cartTotal + shippingCost;
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-background pt-20 lg:pt-30">
+    <main className="min-h-screen bg-background pt-20 lg:pt-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Header */}
           <div className="flex items-center justify-between mb-12">
@@ -258,8 +253,6 @@ export default function CartPage() {
             </div>
           )}
         </div>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }

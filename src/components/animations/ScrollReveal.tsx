@@ -50,6 +50,7 @@ export function ScrollReveal({
   delay = 0,
   duration = 0.8,
   once = true,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   threshold = 0.1,
   useGSAP = false,
   parallaxSpeed = 0.3,
