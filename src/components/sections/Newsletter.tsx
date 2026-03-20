@@ -6,7 +6,7 @@ import { ArrowRight, Lock, Bell, Gift } from "lucide-react";
 import { LuxuryDiamond } from "@/components/common/LuxuryDiamond";
 import { DiamondPattern } from "@/components/decorations/DiamondPattern";
 import { CornerAccents } from "@/components/decorations/CornerAccent";
-import { scrollFadeInUp, createFloatRotateAnimation } from "@/lib/animations/variants";
+import { createFloatRotateAnimation } from "@/lib/animations/variants";
 
 export function Newsletter() {
   const sectionRef = useRef<HTMLElement>(null);

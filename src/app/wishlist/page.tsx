@@ -4,13 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Heart, Trash2, ShoppingBag, ArrowLeft, ArrowRight, Star, Sparkles } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { Heart, ShoppingBag, ArrowLeft, Star, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/useCartStore";
 import { getProductById } from "@/lib/data/products";
-import { formatPrice, getMetalDisplayName } from "@/types/product";
+import { formatPrice } from "@/types/product";
 import { cn } from "@/lib/utils";
 
 export default function WishlistPage() {
@@ -24,7 +22,7 @@ export default function WishlistPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   const handleAddToCart = (productId: string) => {
@@ -47,25 +45,19 @@ export default function WishlistPage() {
   // Avoid hydration mismatch
   if (!mounted) {
     return (
-      <>
-        <Header />
-        <main className="min-h-screen bg-background pt-20 lg:pt-30">
+      <main className="min-h-screen bg-background pt-20 lg:pt-30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="animate-pulse">
               <div className="h-10 bg-muted rounded w-48 mb-4" />
               <div className="h-6 bg-muted rounded w-32" />
             </div>
           </div>
-        </main>
-        <Footer />
-      </>
+      </main>
     );
   }
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-background pt-20 lg:pt-30">
+    <main className="min-h-screen bg-background pt-20 lg:pt-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-12">
@@ -266,8 +258,6 @@ export default function WishlistPage() {
             </div>
           )}
         </div>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }

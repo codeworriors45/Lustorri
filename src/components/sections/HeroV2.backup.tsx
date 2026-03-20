@@ -157,17 +157,6 @@ const LAYOUTS_DESKTOP: CardLayout[] = [
   { x: 400, y: -10, rotation: 5, scale: 0.92, opacity: 1 },
 ];
 
-// Tablet — same spread as desktop but scaled down via container transform
-const LAYOUTS_TABLET: CardLayout[] = [
-  { x: 0, y: 0, rotation: 0, scale: 1, opacity: 1 },
-  { x: -160, y: -25, rotation: -6, scale: 0.97, opacity: 1 },
-  { x: 160, y: -25, rotation: 6, scale: 0.97, opacity: 1 },
-  { x: -290, y: 15, rotation: -8, scale: 0.95, opacity: 1 },
-  { x: 290, y: 15, rotation: 7, scale: 0.95, opacity: 1 },
-  { x: -400, y: -10, rotation: -5, scale: 0.92, opacity: 1 },
-  { x: 400, y: -10, rotation: 5, scale: 0.92, opacity: 1 },
-];
-
 // Mobile — tighter scattered positions
 const LAYOUTS_MOBILE: CardLayout[] = [
   { x: 0, y: 0, rotation: -3, scale: 1, opacity: 1 },
@@ -200,24 +189,18 @@ export function HeroV2() {
   >([]);
   const [isUserActive, setIsUserActive] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isTablet, setIsTablet] = useState(false);
   const [isEntranceDone, setIsEntranceDone] = useState(false);
   const isSwapping = useRef(false);
 
   // Responsive
   useEffect(() => {
-    const check = () => {
-      const w = window.innerWidth;
-      setIsMobile(w < 640);
-      setIsTablet(w >= 640 && w < 1024);
-    };
+    const check = () => setIsMobile(window.innerWidth < 640);
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const LAYOUTS = isMobile ? LAYOUTS_MOBILE : isTablet ? LAYOUTS_TABLET : LAYOUTS_DESKTOP;
+  const LAYOUTS = isMobile ? LAYOUTS_MOBILE : LAYOUTS_DESKTOP; // eslint-disable-line @typescript-eslint/no-unused-vars
 
   // Refs
   const autoPlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -227,8 +210,6 @@ export function HeroV2() {
   const glowRef = useRef<HTMLDivElement>(null);
   const breatheTimelines = useRef<gsap.core.Tween[]>([]);
   const marqueeRowRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const peekDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const peekTimelineRef = useRef<gsap.core.Timeline | null>(null);
 
   // ============================================
   // Idle Breathing — cards float gently when no interaction
@@ -269,7 +250,7 @@ export function HeroV2() {
 
   const animateCardsToLayout = useCallback(
     (momentOrder: PolaroidMoment[], skipAnimation = false, swapFromIndex?: number) => {
-      const layouts = isMobile ? LAYOUTS_MOBILE : isTablet ? LAYOUTS_TABLET : LAYOUTS_DESKTOP;
+      const layouts = isMobile ? LAYOUTS_MOBILE : LAYOUTS_DESKTOP;
       const maxVisible = isMobile ? 4 : 7;
 
       momentOrder.forEach((moment, newIndex) => {
@@ -305,10 +286,6 @@ export function HeroV2() {
           parent.style.zIndex = String(zIndex);
         }
 
-        // Reset transformOrigin and parent rotation from hover peek effect
-        gsap.killTweensOf(parent);
-        gsap.set(parent, { transformOrigin: "50% 50%", rotation: 0 });
-
         if (skipAnimation) {
           gsap.set(parent, {
             x: layout.x,
@@ -324,17 +301,16 @@ export function HeroV2() {
 
         // New front card: lift up first, then glide to center
         if (newIndex === 0 && swapFromIndex !== undefined) {
-          // Kill any existing tweens on this card to prevent conflicts
-          gsap.killTweensOf(card);
           const tl = gsap.timeline();
 
-          // Phase 1: Lift up — card rises, scales up, straightens rotation to 0
+          // Phase 1: Lift up — card rises, scales up, straightens rotation
           tl.to(card, {
             scale: 1.08,
             rotation: 0,
             opacity: 1,
             duration: 0.35,
             ease: "power2.out",
+            overwrite: "auto",
           }, 0);
 
           // Lift shadow deeper while rising
@@ -356,22 +332,23 @@ export function HeroV2() {
             overwrite: "auto",
           }, 0.25);
 
-          // Settle scale and rotation (front card: rotation is always 0)
+          // Settle scale and rotation
           tl.to(card, {
             scale: layout.scale,
-            rotation: 0,
+            rotation: layout.rotation,
             duration: 0.9,
             ease: "power3.inOut",
+            overwrite: "auto",
           }, 0.25);
 
         } else {
-          // All other cards: kill competing tweens, then smooth glide to new position
-          gsap.killTweensOf(card);
+          // All other cards: smooth glide to new position
           gsap.to(parent, {
             x: layout.x,
             y: layout.y,
             duration: 1.1,
             ease: "power3.inOut",
+            overwrite: "auto",
           });
 
           gsap.to(card, {
@@ -380,6 +357,7 @@ export function HeroV2() {
             opacity: layout.opacity,
             duration: 1.1,
             ease: "power3.inOut",
+            overwrite: "auto",
           });
         }
 
@@ -405,7 +383,7 @@ export function HeroV2() {
         }
       });
     },
-    [isMobile, isTablet]
+    [isMobile]
   );
 
   // ============================================
@@ -420,18 +398,6 @@ export function HeroV2() {
       setIsUserActive(true);
       if (autoPlayTimerRef.current) clearTimeout(autoPlayTimerRef.current);
       if (rotateTimerRef.current) clearTimeout(rotateTimerRef.current);
-
-      // Clear any pending peek delay
-      if (peekDelayRef.current) {
-        clearTimeout(peekDelayRef.current);
-        peekDelayRef.current = null;
-      }
-
-      // Kill any active peek timeline
-      if (peekTimelineRef.current) {
-        peekTimelineRef.current.kill();
-        peekTimelineRef.current = null;
-      }
 
       stopBreathing();
 
@@ -559,7 +525,7 @@ export function HeroV2() {
   }, []);
 
   // ============================================
-  // Peek Effect — side cards peek on hover
+  // Peek Effect — side cards lift on hover
   // ============================================
 
   const handleSideCardHover = useCallback((momentId: string, index: number) => {
@@ -568,84 +534,55 @@ export function HeroV2() {
 
     stopBreathing();
 
-    if (peekTimelineRef.current) {
-      peekTimelineRef.current.kill();
-      peekTimelineRef.current = null;
-    }
-
     const frame = card.querySelector("[data-polaroid-frame]") as HTMLElement;
-    const layouts = isMobile ? LAYOUTS_MOBILE : isTablet ? LAYOUTS_TABLET : LAYOUTS_DESKTOP;
+    const layouts = isMobile ? LAYOUTS_MOBILE : LAYOUTS_DESKTOP;
     const layout = layouts[index] || layouts[layouts.length - 1];
     const isLeft = layout.x < 0;
-    const parent = card.parentElement!;
 
-    gsap.killTweensOf(parent);
-    if (frame) gsap.killTweensOf(frame);
-
-    gsap.set(parent, {
-      transformOrigin: isLeft ? "100% 75%" : "0% 75%",
-    });
-
-    // Single smooth tween — all properties animate together, no phases
-    gsap.to(parent, {
+    // Simple slide outward — no origin change, no jerk
+    gsap.to(card.parentElement!, {
       x: layout.x + (isLeft ? -80 : 80),
-      y: layout.y - 12,
-      rotation: isLeft ? -10 : 10,
-      duration: 1.2,
-      ease: "power3.out",
+      duration: 0.7,
+      ease: "power2.out",
       overwrite: true,
     });
 
     if (frame) {
       gsap.to(frame, {
-        boxShadow: "0 25px 60px rgba(74,55,40,0.22), 0 10px 25px rgba(74,55,40,0.12)",
-        duration: 1.2,
-        ease: "power3.out",
+        boxShadow: "0 20px 50px rgba(74,55,40,0.18), 0 8px 20px rgba(74,55,40,0.1)",
+        duration: 0.7,
+        ease: "power2.out",
         overwrite: true,
       });
     }
-  }, [stopBreathing, isMobile, isTablet]);
+  }, [stopBreathing, isMobile]);
 
   const handleSideCardLeave = useCallback((momentId: string, index: number) => {
     const card = cardRefs.current.find((el) => el?.dataset.momentId === momentId);
     if (!card) return;
 
-    if (peekTimelineRef.current) {
-      peekTimelineRef.current.kill();
-      peekTimelineRef.current = null;
-    }
-
     const frame = card.querySelector("[data-polaroid-frame]") as HTMLElement;
-    const layouts = isMobile ? LAYOUTS_MOBILE : isTablet ? LAYOUTS_TABLET : LAYOUTS_DESKTOP;
+    const layouts = isMobile ? LAYOUTS_MOBILE : LAYOUTS_DESKTOP;
     const layout = layouts[index] || layouts[layouts.length - 1];
-    const parent = card.parentElement!;
 
-    gsap.killTweensOf(parent);
-    if (frame) gsap.killTweensOf(frame);
-
-    // Single smooth return — all properties together
-    gsap.to(parent, {
+    // Slide back to original
+    gsap.to(card.parentElement!, {
       x: layout.x,
-      y: layout.y,
-      rotation: 0,
-      duration: 0.5,
-      ease: "power3.inOut",
+      duration: 0.7,
+      ease: "power2.inOut",
       overwrite: true,
-      onComplete: () => {
-        gsap.set(parent, { transformOrigin: "50% 50%" });
-        startBreathing();
-      },
+      onComplete: () => startBreathing(),
     });
 
     if (frame) {
       gsap.to(frame, {
         boxShadow: "0 8px 30px rgba(74,55,40,0.12), 0 2px 8px rgba(74,55,40,0.08)",
-        duration: 0.5,
-        ease: "power3.inOut",
+        duration: 0.7,
+        ease: "power2.inOut",
         overwrite: true,
       });
     }
-  }, [isMobile, isTablet, startBreathing]);
+  }, [isMobile, startBreathing]);
 
   // ============================================
   // Like Interaction
@@ -774,7 +711,7 @@ export function HeroV2() {
 
     // Delay card animation until header logo finishes (1.2s)
     const tl = gsap.timeline({ delay: 1.2 });
-    const layouts = isMobile ? LAYOUTS_MOBILE : isTablet ? LAYOUTS_TABLET : LAYOUTS_DESKTOP;
+    const layouts = isMobile ? LAYOUTS_MOBILE : LAYOUTS_DESKTOP;
     const maxVisible = isMobile ? 4 : 7;
 
     // Section fade in
@@ -899,8 +836,7 @@ export function HeroV2() {
   // ============================================
 
   const frontMoment = moments[0];
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const frontUniverse = getUniverseById(frontMoment.universeId);
+  const frontUniverse = getUniverseById(frontMoment.universeId); // eslint-disable-line @typescript-eslint/no-unused-vars
   const maxVisible = isMobile ? 4 : 7;
 
   return (
@@ -1030,7 +966,7 @@ export function HeroV2() {
       </div>
 
       {/* Polaroid Card Stack */}
-      <div className="relative max-w-[1600px] mx-auto px-4 sm:px-10 lg:px-8 pt-24 lg:pt-28 pb-0 flex flex-col items-center overflow-hidden">
+      <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-24 lg:pt-28 pb-0 flex flex-col items-center">
 
         {/* Mobile — Swiper Cards */}
         <div className="block sm:hidden w-full max-w-[230px] mx-auto pt-20 pb-8">
@@ -1105,8 +1041,8 @@ export function HeroV2() {
           </Swiper>
         </div>
 
-        {/* Desktop — Scattered Card Stack (Grid) */}
-        <div className="hidden sm:grid place-items-center mx-auto mt-5 sm:scale-[0.55] sm:-mb-[220px] md:scale-[0.65] md:-mb-[180px] lg:scale-[0.8] lg:-mb-[100px] xl:scale-100 xl:mb-0 origin-top" style={{ gridTemplateColumns: "1fr", gridTemplateRows: "1fr" }}>
+        {/* Desktop — Scattered Card Stack */}
+        <div className="relative mx-auto hidden sm:block" style={{ height: "clamp(420px, 65vh, 780px)" }}>
           {moments.map((moment, index) => {
             const universe = getUniverseById(moment.universeId);
             const isHovered = hoveredId === moment.id;
@@ -1115,9 +1051,10 @@ export function HeroV2() {
             return (
               <div
                 key={moment.id}
+                className="absolute top-28 left-1/2"
                 style={{
-                  gridArea: "1 / 1",
                   zIndex: 20 - index,
+                  transform: "translate(-50%, -50%)",
                   willChange: "transform",
                   cursor: "pointer",
                 }}
@@ -1127,20 +1064,11 @@ export function HeroV2() {
                   setHoveredId(moment.id);
                   setIsUserActive(true);
                   if (autoPlayTimerRef.current) clearTimeout(autoPlayTimerRef.current);
-                  if (peekDelayRef.current) clearTimeout(peekDelayRef.current);
-                  if (index !== 0) {
-                    peekDelayRef.current = setTimeout(() => {
-                      handleSideCardHover(moment.id, index);
-                    }, 300);
-                  }
+                  if (index !== 0) handleSideCardHover(moment.id, index);
                 }}
                 onMouseLeave={() => {
                   setHoveredId(null);
                   handleCardMouseLeave(moment.id);
-                  if (peekDelayRef.current) {
-                    clearTimeout(peekDelayRef.current);
-                    peekDelayRef.current = null;
-                  }
                   if (index !== 0) handleSideCardLeave(moment.id, index);
                   autoPlayTimerRef.current = setTimeout(() => {
                     setIsUserActive(false);
@@ -1163,7 +1091,7 @@ export function HeroV2() {
                   <div
                     data-polaroid-frame
                     className={cn(
-                      "relative w-[200px] sm:w-[260px] md:w-[300px] bg-[#FAFAF8] border-2 border-primary/30 p-2 sm:p-3 md:p-3 pb-6 sm:pb-8 md:pb-5",
+                      "relative w-[200px] sm:w-[260px] md:w-[300px] bg-[#FAFAF8] border-2 border-primary/30 p-2 sm:p-3 md:p-4 pb-6 sm:pb-8 md:pb-10",
                       "shadow-[0_8px_30px_rgba(74,55,40,0.12),0_2px_8px_rgba(74,55,40,0.08)]",
                       "transition-shadow duration-700 ease-out",
                       isHovered &&

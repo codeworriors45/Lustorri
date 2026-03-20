@@ -3,11 +3,8 @@
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowLeft, Sparkles, ChevronRight } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import { ProductCard } from "@/components/shop";
 import { LuxuryDiamond } from "@/components/common/LuxuryDiamond";
 import { getUniverseBySlug } from "@/lib/data/universes";
@@ -18,7 +15,7 @@ export default function UniverseDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
   const universe = getUniverseBySlug(slug);
-  const products = universe ? getProductsByUniverse(universe.id) : [];
+  const products = useMemo(() => universe ? getProductsByUniverse(universe.id) : [], [universe]);
 
   // Group products by category
   const productsByCategory = useMemo(() => {
@@ -44,9 +41,7 @@ export default function UniverseDetailPage() {
 
   if (!universe) {
     return (
-      <>
-        <Header />
-        <main className="min-h-screen pt-20 lg:pt-[120px] flex items-center justify-center">
+      <main className="min-h-screen pt-20 lg:pt-[120px] flex items-center justify-center">
           <div className="text-center">
             <LuxuryDiamond className="w-16 h-16 mx-auto mb-6 opacity-30" />
             <p className="font-display text-2xl text-foreground mb-4">Universe not found</p>
@@ -54,16 +49,12 @@ export default function UniverseDetailPage() {
               Explore All Universes
             </Link>
           </div>
-        </main>
-        <Footer />
-      </>
+      </main>
     );
   }
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-background pt-20 lg:pt-[120px]">
+    <main className="min-h-screen bg-background pt-20 lg:pt-[120px]">
         {/* Hero Section */}
         <section
           className="relative min-h-[70vh] flex items-center justify-center overflow-hidden"
@@ -285,8 +276,6 @@ export default function UniverseDetailPage() {
             </Link>
           </div>
         </section>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }

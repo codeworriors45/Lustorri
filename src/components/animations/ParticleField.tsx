@@ -62,7 +62,7 @@ export function ParticleField({
   const particles = useMemo(() => generateParticles(count), [count]);
 
   useEffect(() => {
-    setMounted(true);
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   const getOpacity = () => {

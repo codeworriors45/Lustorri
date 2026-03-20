@@ -1,5 +1,3 @@
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
 import {
   Hero,
   UniverseShowcase,
@@ -14,9 +12,7 @@ import {
 
 export default function HomeV1() {
   return (
-    <>
-      <Header />
-      <main>
+    <main>
         {/* Hero - First impression with brand message */}
         <Hero />
 
@@ -43,8 +39,6 @@ export default function HomeV1() {
 
         {/* Newsletter - Capture leads */}
         <Newsletter />
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }

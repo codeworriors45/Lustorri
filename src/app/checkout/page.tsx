@@ -5,13 +5,10 @@ import type { ChangeEvent, FormEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowLeft, Lock, CreditCard, Truck, Sparkles, Check, ChevronRight } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { ArrowLeft, Lock, CreditCard, Sparkles, Check, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LuxuryDiamond } from "@/components/common/LuxuryDiamond";
 import { TrustBadges } from "@/components/common/TrustBadges";
-import { FormInput, FormCheckbox } from "@/components/forms";
 import { useCart } from "@/store/useCartStore";
 import { getProductById } from "@/lib/data/products";
 import { formatPrice } from "@/lib/utils/formatting";
@@ -78,9 +75,7 @@ export default function CheckoutPage() {
 
   if (state.items.length === 0) {
     return (
-      <>
-        <Header />
-        <main className="min-h-screen bg-background pt-20 lg:pt-[120px] flex items-center justify-center">
+      <main className="min-h-screen bg-background pt-20 lg:pt-[120px] flex items-center justify-center">
           <div className="text-center px-4">
             <LuxuryDiamond id="checkout-empty" className="w-16 h-16 mx-auto mb-6 opacity-30" />
             <p className="h1 text-foreground mb-4">Your cart is empty</p>
@@ -93,16 +88,12 @@ export default function CheckoutPage() {
               </Link>
             </Button>
           </div>
-        </main>
-        <Footer />
-      </>
+      </main>
     );
   }
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen bg-background pt-20 lg:pt-[120px]">
+    <main className="min-h-screen bg-background pt-20 lg:pt-[120px]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm font-sans text-muted-foreground mb-8">
@@ -607,8 +598,6 @@ export default function CheckoutPage() {
             </div>
           </div>
         </div>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }
