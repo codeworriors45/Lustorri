@@ -204,6 +204,12 @@ export function HeroV2() {
   const [isEntranceDone, setIsEntranceDone] = useState(false);
   const isSwapping = useRef(false);
 
+  // Use refs to always have current responsive values for GSAP callbacks
+  const isMobileRef = useRef(isMobile);
+  const isTabletRef = useRef(isTablet);
+  isMobileRef.current = isMobile;
+  isTabletRef.current = isTablet;
+
   // Responsive
   useEffect(() => {
     const check = () => {
@@ -229,6 +235,7 @@ export function HeroV2() {
   const marqueeRowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const peekDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const peekTimelineRef = useRef<gsap.core.Timeline | null>(null);
+
 
   // ============================================
   // Idle Breathing — cards float gently when no interaction
@@ -261,6 +268,10 @@ export function HeroV2() {
   const stopBreathing = useCallback(() => {
     breatheTimelines.current.forEach((t) => t.kill());
     breatheTimelines.current = [];
+    // Reset card y/rotation drift left over from killed breathing tweens
+    cardRefs.current.forEach((card) => {
+      if (card) gsap.set(card, { y: 0 });
+    });
   }, []);
 
   // ============================================
@@ -318,6 +329,7 @@ export function HeroV2() {
             rotation: layout.rotation,
             scale: layout.scale,
             opacity: layout.opacity,
+            y: 0,
           });
           return;
         }
@@ -333,6 +345,7 @@ export function HeroV2() {
             scale: 1.08,
             rotation: 0,
             opacity: 1,
+            y: 0,
             duration: 0.35,
             ease: "power2.out",
           }, 0);
@@ -378,6 +391,7 @@ export function HeroV2() {
             rotation: layout.rotation,
             scale: layout.scale,
             opacity: layout.opacity,
+            y: 0,
             duration: 1.1,
             ease: "power3.inOut",
           });
@@ -774,8 +788,10 @@ export function HeroV2() {
 
     // Delay card animation until header logo finishes (1.2s)
     const tl = gsap.timeline({ delay: 1.2 });
-    const layouts = isMobile ? LAYOUTS_MOBILE : isTablet ? LAYOUTS_TABLET : LAYOUTS_DESKTOP;
-    const maxVisible = isMobile ? 4 : 7;
+    const mobile = isMobileRef.current;
+    const tablet = isTabletRef.current;
+    const layouts = mobile ? LAYOUTS_MOBILE : tablet ? LAYOUTS_TABLET : LAYOUTS_DESKTOP;
+    const maxVisible = mobile ? 4 : 7;
 
     // Section fade in
     tl.fromTo(
@@ -894,6 +910,10 @@ export function HeroV2() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
+
+  // ============================================
+
   // ============================================
   // Derived data
   // ============================================
@@ -906,422 +926,444 @@ export function HeroV2() {
   return (
     <section
       ref={sectionRef}
-      className="relative overflow-hidden bg-background opacity-0 pb-12 sm:pb-16 md:pb-20"
+      className="relative bg-background opacity-0"
+      style={{ overflowX: "clip" }}
     >
-      {/* Ambient Background */}
-      <GradientOrb
-        size="xl"
-        color="gold"
-        position="top-right"
-        animate
-        animationType="float"
-        className="opacity-20 pointer-events-none"
-      />
-      <GradientOrb
-        size="lg"
-        color="rose"
-        position="bottom-left"
-        animate
-        animationType="pulse"
-        className="opacity-15 pointer-events-none"
-      />
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 4.5, duration: 1.0 }}
-        className="pointer-events-none"
-      >
-        <ParticleField count={15} color="gold" intensity="subtle" />
-      </motion.div>
+      {/* Section 1 wrapper */}
+      <div className="relative pb-10 sm:pb-12 md:pb-14 bg-background" style={{ zIndex: 2, overflowX: "clip" }}>
 
-      {/* Background Moving Text */}
-      <div
-        className="absolute inset-0 pointer-events-none overflow-hidden select-none flex flex-col justify-center gap-2"
-        style={{ transform: "rotate(-12deg) scale(1.3)", transformOrigin: "center center" }}
-      >
-        <div
-          ref={(el) => { marqueeRowRefs.current[0] = el; }}
-          className="flex whitespace-nowrap will-change-transform"
+        {/* Ambient Background */}
+        <GradientOrb
+          size="xl"
+          color="gold"
+          position="top-right"
+          animate
+          animationType="float"
+          className="opacity-20 pointer-events-none"
+        />
+        <GradientOrb
+          size="lg"
+          color="rose"
+          position="bottom-left"
+          animate
+          animationType="pulse"
+          className="opacity-15 pointer-events-none"
+        />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 4.5, duration: 1.0 }}
+          className="pointer-events-none"
         >
-          {Array.from({ length: 6 }).map((_, i) => (
-            <span
-              key={i}
-              className="font-display font-bold uppercase mx-6"
-              style={{
-                fontSize: "clamp(3rem, 8vw, 9rem)",
-                lineHeight: 1,
-                letterSpacing: "-0.02em",
-                color: "transparent",
-                opacity: 0.08,
-                WebkitTextStroke: "1.5px #C4A968",
-              }}
-            >
-              turning lust into a timeless love storri.
-              <span className="mx-6 opacity-30">&bull;</span>
-            </span>
-          ))}
-        </div>
+          <ParticleField count={15} color="gold" intensity="subtle" />
+        </motion.div>
 
+        {/* Background Moving Text */}
         <div
-          ref={(el) => { marqueeRowRefs.current[1] = el; }}
-          className="flex whitespace-nowrap will-change-transform"
+          className="absolute inset-0 pointer-events-none overflow-hidden select-none flex flex-col justify-center gap-2"
+          style={{ transform: "rotate(-12deg) scale(1.3)", transformOrigin: "center center" }}
         >
-          {Array.from({ length: 8 }).map((_, i) => (
-            <span
-              key={i}
-              className="font-serif italic mx-10"
-              style={{
-                fontSize: "clamp(1.2rem, 3vw, 3rem)",
-                lineHeight: 1,
-                letterSpacing: "0.1em",
-                color: "#C4A968",
-                opacity: 0.07,
-              }}
-            >
-              passion that becomes a love storri.
-              <span className="mx-10 opacity-30">&mdash;</span>
-            </span>
-          ))}
-        </div>
-
-        <div
-          ref={(el) => { marqueeRowRefs.current[2] = el; }}
-          className="flex whitespace-nowrap will-change-transform"
-        >
-          {Array.from({ length: 6 }).map((_, i) => (
-            <span
-              key={i}
-              className="font-display font-bold uppercase mx-8"
-              style={{
-                fontSize: "clamp(5rem, 13vw, 14rem)",
-                lineHeight: 1,
-                letterSpacing: "-0.02em",
-                color: "#C4A968",
-                opacity: 0.09,
-              }}
-            >
-              a journey from lust to love.
-              <span className="mx-8 opacity-30">&bull;</span>
-            </span>
-          ))}
-        </div>
-
-        <div
-          ref={(el) => { marqueeRowRefs.current[3] = el; }}
-          className="flex whitespace-nowrap will-change-transform"
-        >
-          {Array.from({ length: 8 }).map((_, i) => (
-            <span
-              key={i}
-              className="font-serif italic mx-10"
-              style={{
-                fontSize: "clamp(1.2rem, 3vw, 3rem)",
-                lineHeight: 1,
-                letterSpacing: "0.1em",
-                color: "#C4A968",
-                opacity: 0.07,
-              }}
-            >
-              desire writing a beautiful storri.
-              <span className="mx-10 opacity-30">&mdash;</span>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Polaroid Card Stack */}
-      <div className="relative max-w-[1600px] mx-auto px-4 sm:px-10 lg:px-8 pt-24 lg:pt-28 pb-0 flex flex-col items-center overflow-hidden">
-
-        {/* Mobile — Swiper Cards */}
-        <div className="block sm:hidden w-full max-w-[230px] mx-auto pt-20 pb-8">
-          <Swiper
-            effect="cards"
-            grabCursor
-            modules={[EffectCards]}
-            className="w-full"
-            cardsEffect={{
-              perSlideOffset: 8,
-              perSlideRotate: 3,
-              rotate: true,
-              slideShadows: false,
-            }}
+          <div
+            ref={(el) => { marqueeRowRefs.current[0] = el; }}
+            className="flex whitespace-nowrap will-change-transform"
           >
-            {polaroidMoments.map((moment) => {
-              const universe = getUniverseById(moment.universeId);
-              return (
-                <SwiperSlide key={moment.id} className="!bg-transparent">
-                  <div className="bg-[#FAFAF8] border-2 border-primary/30 p-2 pb-6 shadow-[0_8px_30px_rgba(74,55,40,0.12),0_2px_8px_rgba(74,55,40,0.08)]">
-                    <div className="relative w-full overflow-hidden" style={{ height: "220px" }}>
-                      <Image
-                        src={moment.image}
-                        alt={moment.title}
-                        fill
-                        className="object-cover"
-                        sizes="280px"
-                      />
-                      <div
-                        className="absolute bottom-0 left-0 right-0 h-[2px]"
-                        style={{ backgroundColor: universe?.color || "#C4A968" }}
-                      />
-                    </div>
-                    <div className="mt-3 flex flex-col gap-2">
-                      <p
-                        className="text-center text-sm text-foreground/80 italic"
-                        style={{ fontFamily: "'Segoe Script', 'Brush Script MT', cursive" }}
-                      >
-                        {moment.caption}
-                      </p>
-                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                        <PixelHeart size={12} />
-                        <span className="text-sm font-sans font-medium tabular-nums">
-                          {likes[moment.id]?.count.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap justify-center gap-x-2 gap-y-0.5 mt-1">
-                        {moment.hashtags.map((tag) => (
-                          <span key={tag} className="text-[10px] font-sans font-medium text-foreground/30">
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <button
-                      className={cn(
-                        "absolute bottom-3 left-3 z-10 transition-all duration-300",
-                        "hover:scale-110 active:scale-95",
-                        likes[moment.id]?.userLiked
-                          ? "text-primary drop-shadow-[0_0_6px_rgba(162,44,62,0.5)]"
-                          : "text-muted-foreground"
-                      )}
-                      onClick={(e) => handleLike(moment.id, e)}
-                      aria-label="Like this moment"
-                    >
-                      <PixelHeart size={24} />
-                    </button>
-                  </div>
-                </SwiperSlide>
-              );
-            })}
-          </Swiper>
-        </div>
-
-        {/* Desktop — Scattered Card Stack (Grid) */}
-        <div className="hidden sm:grid place-items-center mx-auto mt-5 sm:scale-[0.55] sm:-mb-[220px] md:scale-[0.65] md:-mb-[180px] lg:scale-[0.8] lg:-mb-[100px] xl:scale-100 xl:mb-0 origin-top" style={{ gridTemplateColumns: "1fr", gridTemplateRows: "1fr" }}>
-          {moments.map((moment, index) => {
-            const universe = getUniverseById(moment.universeId);
-            const isHovered = hoveredId === moment.id;
-            if (index >= maxVisible) return null;
-
-            return (
-              <div
-                key={moment.id}
+            {Array.from({ length: 6 }).map((_, i) => (
+              <span
+                key={i}
+                className="font-display font-bold uppercase mx-6"
                 style={{
-                  gridArea: "1 / 1",
-                  zIndex: 20 - index,
-                  willChange: "transform",
-                  cursor: "pointer",
-                }}
-                onClick={() => bringToFront(moment.id)}
-                onMouseMove={(e) => handleCardMouseMove(e, moment.id)}
-                onMouseEnter={() => {
-                  setHoveredId(moment.id);
-                  setIsUserActive(true);
-                  if (autoPlayTimerRef.current) clearTimeout(autoPlayTimerRef.current);
-                  if (peekDelayRef.current) clearTimeout(peekDelayRef.current);
-                  if (index !== 0) {
-                    peekDelayRef.current = setTimeout(() => {
-                      handleSideCardHover(moment.id, index);
-                    }, 300);
-                  }
-                }}
-                onMouseLeave={() => {
-                  setHoveredId(null);
-                  handleCardMouseLeave(moment.id);
-                  if (peekDelayRef.current) {
-                    clearTimeout(peekDelayRef.current);
-                    peekDelayRef.current = null;
-                  }
-                  if (index !== 0) handleSideCardLeave(moment.id, index);
-                  autoPlayTimerRef.current = setTimeout(() => {
-                    setIsUserActive(false);
-                  }, 8000);
+                  fontSize: "clamp(3rem, 8vw, 9rem)",
+                  lineHeight: 1,
+                  letterSpacing: "-0.02em",
+                  color: "transparent",
+                  opacity: 0.08,
+                  WebkitTextStroke: "1.5px #C4A968",
                 }}
               >
-                {/* Card inner — GSAP controls rotation/scale/opacity */}
+                turning lust into a timeless love storri.
+                <span className="mx-6 opacity-30">&bull;</span>
+              </span>
+            ))}
+          </div>
+
+          <div
+            ref={(el) => { marqueeRowRefs.current[1] = el; }}
+            className="flex whitespace-nowrap will-change-transform"
+          >
+            {Array.from({ length: 8 }).map((_, i) => (
+              <span
+                key={i}
+                className="font-serif italic mx-10"
+                style={{
+                  fontSize: "clamp(1.2rem, 3vw, 3rem)",
+                  lineHeight: 1,
+                  letterSpacing: "0.1em",
+                  color: "#C4A968",
+                  opacity: 0.07,
+                }}
+              >
+                passion that becomes a love storri.
+                <span className="mx-10 opacity-30">&mdash;</span>
+              </span>
+            ))}
+          </div>
+
+          <div
+            ref={(el) => { marqueeRowRefs.current[2] = el; }}
+            className="flex whitespace-nowrap will-change-transform"
+          >
+            {Array.from({ length: 6 }).map((_, i) => (
+              <span
+                key={i}
+                className="font-display font-bold uppercase mx-8"
+                style={{
+                  fontSize: "clamp(5rem, 13vw, 14rem)",
+                  lineHeight: 1,
+                  letterSpacing: "-0.02em",
+                  color: "#C4A968",
+                  opacity: 0.09,
+                }}
+              >
+                a journey from lust to love.
+                <span className="mx-8 opacity-30">&bull;</span>
+              </span>
+            ))}
+          </div>
+
+          <div
+            ref={(el) => { marqueeRowRefs.current[3] = el; }}
+            className="flex whitespace-nowrap will-change-transform"
+          >
+            {Array.from({ length: 8 }).map((_, i) => (
+              <span
+                key={i}
+                className="font-serif italic mx-10"
+                style={{
+                  fontSize: "clamp(1.2rem, 3vw, 3rem)",
+                  lineHeight: 1,
+                  letterSpacing: "0.1em",
+                  color: "#C4A968",
+                  opacity: 0.07,
+                }}
+              >
+                desire writing a beautiful storri.
+                <span className="mx-10 opacity-30">&mdash;</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Polaroid Card Stack */}
+        <div className="relative max-w-[1600px] mx-auto px-4 sm:px-10 lg:px-8 pt-12 lg:pt-14 pb-4 sm:pb-2.5 flex flex-col items-center overflow-x-clip overflow-y-visible gap-4 sm:gap-6">
+
+          {/* Mobile — Swiper Cards */}
+          <div className="block sm:hidden w-full max-w-[230px] mx-auto pt-20 pb-8">
+            <Swiper
+              effect="cards"
+              grabCursor
+              modules={[EffectCards]}
+              className="w-full"
+              cardsEffect={{
+                perSlideOffset: 8,
+                perSlideRotate: 3,
+                rotate: true,
+                slideShadows: false,
+              }}
+            >
+              {polaroidMoments.map((moment) => {
+                const universe = getUniverseById(moment.universeId);
+                return (
+                  <SwiperSlide key={moment.id} className="!bg-transparent">
+                    <div className="bg-[#FAFAF8] border-2 border-primary/30 p-2 pb-6 shadow-[0_8px_30px_rgba(74,55,40,0.12),0_2px_8px_rgba(74,55,40,0.08)]">
+                      <div className="relative w-full overflow-hidden" style={{ height: "220px" }}>
+                        <Image
+                          src={moment.image}
+                          alt={moment.title}
+                          fill
+                          className="object-cover"
+                          sizes="280px"
+                        />
+                        <div
+                          className="absolute bottom-0 left-0 right-0 h-[2px]"
+                          style={{ backgroundColor: universe?.color || "#C4A968" }}
+                        />
+                      </div>
+                      <div className="mt-3 flex flex-col gap-2">
+                        <p
+                          className="text-center text-sm text-foreground/80 italic"
+                          style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
+                        >
+                          {moment.caption}
+                        </p>
+                        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                          <PixelHeart size={12} />
+                          <span className="text-sm font-sans font-medium tabular-nums">
+                            {likes[moment.id]?.count.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap justify-center gap-x-2 gap-y-0.5 mt-1">
+                          {moment.hashtags.map((tag) => (
+                            <span key={tag} className="text-[10px] font-sans font-medium text-foreground/30">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <button
+                        className={cn(
+                          "absolute bottom-3 left-3 z-10 transition-all duration-300",
+                          "hover:scale-110 active:scale-95",
+                          likes[moment.id]?.userLiked
+                            ? "text-primary drop-shadow-[0_0_6px_rgba(162,44,62,0.5)]"
+                            : "text-muted-foreground"
+                        )}
+                        onClick={(e) => handleLike(moment.id, e)}
+                        aria-label="Like this moment"
+                      >
+                        <PixelHeart size={24} />
+                      </button>
+                    </div>
+                  </SwiperSlide>
+                );
+              })}
+            </Swiper>
+          </div>
+
+          {/* Desktop — Scattered Card Stack (Grid) */}
+          {/*
+          All 7 cards share gridArea "1/1" so they stack at the same origin.
+          GSAP spreads them via translateX/Y transforms.
+          Height must be tall enough to contain the tallest card at its
+          final GSAP position (card ~360px tall + max Y offset ~15px).
+          Width auto + overflow-x:visible lets side cards bleed out.
+        */}
+          <div
+            className="hidden sm:grid place-items-center mx-auto w-full"
+            style={{
+              gridTemplateColumns: "1fr",
+              gridTemplateRows: "1fr",
+              height: "clamp(560px, 55vh, 620px)",
+              overflow: "visible",
+            }}
+          >
+            {moments.map((moment, index) => {
+              const universe = getUniverseById(moment.universeId);
+              const isHovered = hoveredId === moment.id;
+              if (index >= maxVisible) return null;
+
+              return (
                 <div
-                  ref={(el) => {
-                    cardRefs.current[index] = el;
-                  }}
-                  data-moment-id={moment.id}
-                  data-index={String(index)}
+                  key={moment.id}
                   style={{
-                    transformStyle: "preserve-3d",
-                    perspective: "800px",
+                    gridArea: "1 / 1",
+                    zIndex: 20 - index,
+                    willChange: "transform",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => bringToFront(moment.id)}
+                  onMouseMove={(e) => handleCardMouseMove(e, moment.id)}
+                  onMouseEnter={() => {
+                    setHoveredId(moment.id);
+                    setIsUserActive(true);
+                    if (autoPlayTimerRef.current) clearTimeout(autoPlayTimerRef.current);
+                    if (peekDelayRef.current) clearTimeout(peekDelayRef.current);
+                    if (index !== 0) {
+                      peekDelayRef.current = setTimeout(() => {
+                        handleSideCardHover(moment.id, index);
+                      }, 300);
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredId(null);
+                    handleCardMouseLeave(moment.id);
+                    if (peekDelayRef.current) {
+                      clearTimeout(peekDelayRef.current);
+                      peekDelayRef.current = null;
+                    }
+                    if (index !== 0) handleSideCardLeave(moment.id, index);
+                    autoPlayTimerRef.current = setTimeout(() => {
+                      setIsUserActive(false);
+                    }, 8000);
                   }}
                 >
-                  {/* Polaroid frame */}
+                  {/* Card inner — GSAP controls rotation/scale/opacity */}
                   <div
-                    data-polaroid-frame
-                    className={cn(
-                      "relative w-[200px] sm:w-[260px] md:w-[300px] bg-[#FAFAF8] border-2 border-primary/30 p-2 sm:p-3 md:p-3 pb-6 sm:pb-8 md:pb-5",
-                      "shadow-[0_8px_30px_rgba(74,55,40,0.12),0_2px_8px_rgba(74,55,40,0.08)]",
-                      "transition-shadow duration-700 ease-out",
-                      isHovered &&
-                      "shadow-[0_20px_60px_rgba(74,55,40,0.22),0_8px_20px_rgba(74,55,40,0.15)]"
-                    )}
+                    ref={(el) => {
+                      cardRefs.current[index] = el;
+                    }}
+                    data-moment-id={moment.id}
+                    data-index={String(index)}
+                    style={{
+                      transformStyle: "preserve-3d",
+                      perspective: "800px",
+                    }}
                   >
-                    {/* Image */}
+                    {/* Polaroid frame */}
                     <div
-                      className="relative w-full overflow-hidden"
-                      style={{ height: "clamp(200px, 30vh, 340px)" }}
+                      data-polaroid-frame
+                      className={cn(
+                        "relative w-[200px] sm:w-[260px] md:w-[300px] bg-[#FAFAF8] border-2 border-primary/30 p-2 sm:p-3 md:p-3 pb-6 sm:pb-8 md:pb-5",
+                        "shadow-[0_8px_30px_rgba(74,55,40,0.12),0_2px_8px_rgba(74,55,40,0.08)]",
+                        "transition-shadow duration-700 ease-out",
+                        isHovered &&
+                        "shadow-[0_20px_60px_rgba(74,55,40,0.22),0_8px_20px_rgba(74,55,40,0.15)]"
+                      )}
                     >
-                      <Image
-                        src={moment.image}
-                        alt={moment.title}
-                        fill
-                        className={cn(
-                          "object-cover transition-transform duration-700 ease-out",
-                          isHovered && "scale-[1.03]"
-                        )}
-                        sizes="300px"
-                        priority={index === 0}
-                      />
-
-                      {/* Universe accent bar */}
+                      {/* Image */}
                       <div
-                        className="absolute bottom-0 left-0 right-0 h-[2px]"
-                        style={{
-                          backgroundColor: universe?.color || "#C4A968",
-                          transition: "background-color 0.8s ease",
-                        }}
-                      />
+                        className="relative w-full overflow-hidden"
+                        style={{ height: "clamp(200px, 30vh, 340px)" }}
+                      >
+                        <Image
+                          src={moment.image}
+                          alt={moment.title}
+                          fill
+                          className={cn(
+                            "object-cover transition-transform duration-700 ease-out",
+                            isHovered && "scale-[1.03]"
+                          )}
+                          sizes="300px"
+                          priority={index === 0}
+                        />
 
-                      {/* Cursor glow — front card only */}
-                      {index === 0 && (
+                        {/* Universe accent bar */}
                         <div
-                          ref={glowRef}
-                          className="absolute pointer-events-none z-10"
+                          className="absolute bottom-0 left-0 right-0 h-[2px]"
                           style={{
-                            width: "300px",
-                            height: "300px",
-                            top: "-150px",
-                            left: "-150px",
-                            background:
-                              "radial-gradient(circle 150px, rgba(255,255,255,0.12), transparent)",
-                            opacity: 0,
+                            backgroundColor: universe?.color || "#C4A968",
+                            transition: "background-color 0.8s ease",
                           }}
                         />
-                      )}
-                    </div>
 
-                    {/* Caption */}
-                    <div className="mt-3 flex flex-col gap-2">
-                      <p
-                        className="text-center text-xs sm:text-sm text-foreground/80 italic"
-                        style={{ fontFamily: "'Segoe Script', 'Brush Script MT', cursive" }}
-                      >
-                        {moment.caption}
-                      </p>
-                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                        <PixelHeart size={12} />
-                        <AnimatePresence mode="wait">
-                          <motion.span
-                            key={likes[moment.id]?.count}
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            transition={{ duration: 0.25, ease: "easeOut" }}
-                            className="text-sm font-sans font-medium tabular-nums"
-                          >
-                            {likes[moment.id]?.count.toLocaleString()}
-                          </motion.span>
-                        </AnimatePresence>
+                        {/* Cursor glow — front card only */}
+                        {index === 0 && (
+                          <div
+                            ref={glowRef}
+                            className="absolute pointer-events-none z-10"
+                            style={{
+                              width: "300px",
+                              height: "300px",
+                              top: "-150px",
+                              left: "-150px",
+                              background:
+                                "radial-gradient(circle 150px, rgba(255,255,255,0.12), transparent)",
+                              opacity: 0,
+                            }}
+                          />
+                        )}
                       </div>
-                      <div className="flex flex-wrap justify-center gap-x-2 gap-y-0.5 mt-1">
-                        {moment.hashtags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="text-[10px] font-sans font-medium text-foreground/30"
-                          >
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
 
-                    {/* Like button */}
-                    <button
-                      className={cn(
-                        "absolute bottom-3 left-3 sm:bottom-4 sm:left-4 z-10",
-                        "transition-all duration-300",
-                        "hover:scale-110 active:scale-95",
-                        likes[moment.id]?.userLiked
-                          ? "text-primary drop-shadow-[0_0_6px_rgba(162,44,62,0.5)]"
-                          : "text-muted-foreground"
-                      )}
-                      onClick={(e) => handleLike(moment.id, e)}
-                      aria-label="Like this moment"
-                    >
-                      <PixelHeart size={24} />
-                    </button>
-
-                    {/* Floating hearts */}
-                    {floatingHearts
-                      .filter((h) => h.momentId === moment.id)
-                      .map((heart) => (
-                        <div
-                          key={heart.id}
-                          className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 text-primary pointer-events-none"
-                          style={{
-                            animation: `${HEART_ANIMATIONS[heart.variant]} 1.5s ease-out ${heart.delay}ms forwards`,
-                            opacity: 0,
-                          }}
+                      {/* Caption */}
+                      <div className="mt-3 flex flex-col gap-2">
+                        <p
+                          className="text-center text-xs sm:text-sm text-foreground/80 italic"
+                          style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
                         >
-                          <PixelHeart size={16} />
+                          {moment.caption}
+                        </p>
+                        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                          <PixelHeart size={12} />
+                          <AnimatePresence mode="wait">
+                            <motion.span
+                              key={likes[moment.id]?.count}
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -8 }}
+                              transition={{ duration: 0.25, ease: "easeOut" }}
+                              className="text-sm font-sans font-medium tabular-nums"
+                            >
+                              {likes[moment.id]?.count.toLocaleString()}
+                            </motion.span>
+                          </AnimatePresence>
                         </div>
-                      ))}
+                        <div className="flex flex-wrap justify-center gap-x-2 gap-y-0.5 mt-1">
+                          {moment.hashtags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="text-[10px] font-sans font-medium text-foreground/30"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Like button */}
+                      <button
+                        className={cn(
+                          "absolute bottom-3 left-3 sm:bottom-4 sm:left-4 z-10",
+                          "transition-all duration-300",
+                          "hover:scale-110 active:scale-95",
+                          likes[moment.id]?.userLiked
+                            ? "text-primary drop-shadow-[0_0_6px_rgba(162,44,62,0.5)]"
+                            : "text-muted-foreground"
+                        )}
+                        onClick={(e) => handleLike(moment.id, e)}
+                        aria-label="Like this moment"
+                      >
+                        <PixelHeart size={24} />
+                      </button>
+
+                      {/* Floating hearts */}
+                      {floatingHearts
+                        .filter((h) => h.momentId === moment.id)
+                        .map((heart) => (
+                          <div
+                            key={heart.id}
+                            className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 text-primary pointer-events-none"
+                            style={{
+                              animation: `${HEART_ANIMATIONS[heart.variant]} 1.5s ease-out ${heart.delay}ms forwards`,
+                              opacity: 0,
+                            }}
+                          >
+                            <PixelHeart size={16} />
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          {/* Hero content — sits directly below cards in flex-col */}
+          <div className="relative z-30 flex flex-col items-center text-center gap-2 sm:gap-3 max-w-[800px] mx-auto flex-shrink-0 w-full">
+            <AnimatedText
+              as="h1"
+              animation="split"
+              delay={isMobile ? 0.3 : 3}
+              className="font-display text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-semibold leading-[1.15] text-foreground tracking-tight px-2"
+            >
+              Jewelry for the moments you never forget.
+            </AnimatedText>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: isMobile ? 0.5 : 3.8, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="font-serif italic text-lg sm:text-xl text-muted-foreground max-w-[500px]"
+            >
+              Every ring holds a story. Every story begins with a touch.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: isMobile ? 0.7 : 4.6, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="flex flex-col sm:flex-row gap-4 mt-2"
+            >
+              <Button size="lg" variant="primary" asChild>
+                <Link href="/universes">Discover the rings</Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/stories">Read the love stories</Link>
+              </Button>
+            </motion.div>
+          </div>
         </div>
 
-        {/* Hero content */}
-        <div className="relative z-30 flex flex-col items-center text-center gap-2 sm:gap-3 mt-12 sm:mt-16 md:mt-20 max-w-[800px] mx-auto flex-shrink-0">
-          <AnimatedText
-            as="h1"
-            animation="split"
-            delay={isMobile ? 0.3 : 4.5}
-            className="font-display text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-semibold leading-[1.15] text-foreground tracking-tight px-2"
-          >
-            Jewelry for the moments you never forget.
-          </AnimatedText>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: isMobile ? 0.5 : 4.8, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="font-serif italic text-lg sm:text-xl text-muted-foreground max-w-[500px]"
-          >
-            Every ring holds a story. Every story begins with a touch.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: isMobile ? 0.7 : 5.1, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="flex flex-col sm:flex-row gap-4 mt-2"
-          >
-            <Button size="lg" variant="primary" asChild>
-              <Link href="/universes">Discover the rings</Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/stories">Read the love stories</Link>
-            </Button>
-          </motion.div>
-        </div>
-      </div>
+      </div>{/* End Section 1 wrapper */}
 
       {/* Keyframe animations */}
       <style jsx>{`
