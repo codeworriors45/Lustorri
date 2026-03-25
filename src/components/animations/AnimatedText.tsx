@@ -53,7 +53,7 @@ export function AnimatedText({
   splitBy = "words",
 }: AnimatedTextProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once, margin: "-100px" });
+  const isInView = useInView(ref, { once, margin: delay > 0 ? "500px" : "-100px" });
   const charsRef = useRef<HTMLSpanElement[]>([]);
 
   // For split animation using GSAP

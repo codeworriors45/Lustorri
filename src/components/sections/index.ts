@@ -8,3 +8,4 @@ export { Testimonials } from "./Testimonials";
 export { Newsletter } from "./Newsletter";
 export { BrandPhilosophy } from "./BrandPhilosophy";
 export { UniverseTypes } from "./UniverseTypes";
+export { ShowcaseHero } from "./ShowcaseHero";
