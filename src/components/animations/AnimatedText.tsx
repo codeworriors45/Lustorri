@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
 import { motion, useInView, Variants } from "framer-motion";
-import { gsap } from "@/lib/animations/gsap";
+import { gsap, useGSAP } from "@/lib/animations/gsap";
 
 interface AnimatedTextProps {
   children: string;
@@ -56,8 +56,8 @@ export function AnimatedText({
   const isInView = useInView(ref, { once, margin: delay > 0 ? "500px" : "-100px" });
   const charsRef = useRef<HTMLSpanElement[]>([]);
 
-  // For split animation using GSAP
-  useEffect(() => {
+  // For split animation using GSAP — useGSAP handles cleanup automatically
+  useGSAP(() => {
     if (animation === "split" && isInView && charsRef.current.length > 0) {
       gsap.fromTo(
         charsRef.current,
@@ -73,7 +73,7 @@ export function AnimatedText({
         }
       );
     }
-  }, [animation, isInView, delay, duration]);
+  }, { dependencies: [animation, isInView, delay, duration] });
 
   // Split animation renders differently
   if (animation === "split") {

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import Image from "next/image";
-import { gsap } from "@/lib/animations/gsap";
+import { gsap, useGSAP } from "@/lib/animations/gsap";
 
 export function ShowcaseHero() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -11,14 +11,13 @@ export function ShowcaseHero() {
   const overlayRef = useRef<HTMLDivElement>(null);
   const shimmerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      const container = containerRef.current;
-      const imageWrapper = imageWrapperRef.current;
-      const image = imageRef.current;
-      const overlay = overlayRef.current;
-      const shimmer = shimmerRef.current;
-      if (!container || !imageWrapper || !image || !overlay || !shimmer) return;
+  useGSAP(() => {
+    const container = containerRef.current;
+    const imageWrapper = imageWrapperRef.current;
+    const image = imageRef.current;
+    const overlay = overlayRef.current;
+    const shimmer = shimmerRef.current;
+    if (!container || !imageWrapper || !image || !overlay || !shimmer) return;
 
       // Parallax — image moves slower than scroll for depth
       gsap.fromTo(
@@ -84,10 +83,7 @@ export function ShowcaseHero() {
           },
         }
       );
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, []);
+  }, { scope: containerRef });
 
   return (
     <div

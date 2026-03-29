@@ -229,9 +229,28 @@
     color: var(--ivory-white);
   }
 
-  /* Smooth Scrolling */
+  /* Lenis handles smooth scrolling — do NOT set scroll-behavior: smooth
+     as it conflicts with Lenis's scroll interpolation */
   html {
-    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* GPU-accelerated animation containers */
+  .gsap-line,
+  .gsap-circle,
+  .gsap-showcase,
+  .gsap-ambient-glow {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  /* Accessibility: respect reduced-motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
   /* Custom Scrollbar - Champagne Gold */

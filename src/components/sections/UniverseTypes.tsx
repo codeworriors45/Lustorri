@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
 import { Zap, Heart, ArrowRight } from "lucide-react";
-import gsap from "gsap";
+import { gsap, useGSAP } from "@/lib/animations/gsap";
 import { LuxuryDiamond } from "@/components/common/LuxuryDiamond";
 
 const momentUniverses = [
@@ -27,8 +27,8 @@ export function UniverseTypes() {
   const identityRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
 
-  // GSAP hover animations for cards
-  useEffect(() => {
+  // GSAP hover animations for cards — useGSAP auto-reverts on unmount
+  useGSAP(() => {
     if (!isInView) return;
 
     const cards = document.querySelectorAll(".universe-card");
@@ -51,7 +51,7 @@ export function UniverseTypes() {
         });
       });
     });
-  }, [isInView]);
+  }, { scope: sectionRef, dependencies: [isInView] });
 
   return (
     <section

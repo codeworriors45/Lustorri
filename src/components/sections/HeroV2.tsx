@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { gsap } from "@/lib/animations/gsap";
+import { gsap, useGSAP } from "@/lib/animations/gsap";
 import { AnimatedText } from "@/components/animations/AnimatedText";
 import { GradientOrb } from "@/components/animations/GradientOrb";
 import { ParticleField } from "@/components/animations/ParticleField";
@@ -185,7 +185,7 @@ const HEART_ANIMATIONS = ["floatUpHeart", "floatUpHeartRight", "floatUpHeartCent
 
 export function HeroV2() {
   const [moments, setMoments] = useState(polaroidMoments);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [, setHoveredId] = useState<string | null>(null);
   const [likes, setLikes] = useState<Record<string, { count: number; userLiked: boolean }>>(() =>
     polaroidMoments.reduce(
       (acc, m) => {
@@ -207,8 +207,12 @@ export function HeroV2() {
   // Use refs to always have current responsive values for GSAP callbacks
   const isMobileRef = useRef(isMobile);
   const isTabletRef = useRef(isTablet);
-  isMobileRef.current = isMobile;
-  isTabletRef.current = isTablet;
+
+  // Sync refs with state in an effect (not during render)
+  useEffect(() => {
+    isMobileRef.current = isMobile;
+    isTabletRef.current = isTablet;
+  }, [isMobile, isTablet]);
 
   // Responsive
   useEffect(() => {
@@ -246,20 +250,27 @@ export function HeroV2() {
     breatheTimelines.current.forEach((t) => t.kill());
     breatheTimelines.current = [];
 
+    // Skip breathing on mobile — saves continuous GPU compositing
+    if (isMobileRef.current) return;
+
     cardRefs.current.forEach((card, i) => {
       if (!card) return;
       const duration = 3 + i * 0.4;
       const yAmount = i === 0 ? 4 : 2 + i * 0.5;
       const rotAmount = 0.3 + i * 0.1;
 
-      const tween = gsap.to(card, {
-        y: `+=${yAmount}`,
+      const tween = gsap.fromTo(card, {
+        y: 0,
+        rotation: gsap.getProperty(card, "rotation") as number || 0,
+      }, {
+        y: yAmount,
         rotation: `+=${rotAmount}`,
         duration,
         ease: "sine.inOut",
         yoyo: true,
         repeat: -1,
         delay: i * 0.3,
+        force3D: true,
       });
       breatheTimelines.current.push(tween);
     });
@@ -305,13 +316,13 @@ export function HeroV2() {
           parent.style.zIndex = "19";
           setTimeout(() => {
             parent.style.zIndex = String(zIndex);
-          }, 600);
+          }, 400);
         } else if (newIndex === 0 && !skipAnimation) {
           // New front card gets boosted immediately
           parent.style.zIndex = "25";
           setTimeout(() => {
             parent.style.zIndex = "20";
-          }, 1100);
+          }, 750);
         } else {
           parent.style.zIndex = String(zIndex);
         }
@@ -346,36 +357,35 @@ export function HeroV2() {
             rotation: 0,
             opacity: 1,
             y: 0,
-            duration: 0.35,
+            duration: 0.25,
             ease: "power2.out",
+            force3D: true,
           }, 0);
 
-          // Lift shadow deeper while rising
+          // Lift shadow via CSS transition (no per-frame paint)
           const frame = card.querySelector("[data-polaroid-frame]") as HTMLElement;
           if (frame) {
-            tl.to(frame, {
-              boxShadow: "0 30px 70px rgba(196,169,104,0.35), 0 15px 35px rgba(74,55,40,0.2)",
-              duration: 0.35,
-              ease: "power2.out",
-            }, 0);
+            frame.style.boxShadow = "0 30px 70px rgba(196,169,104,0.35), 0 15px 35px rgba(74,55,40,0.2)";
           }
 
           // Phase 2: Glide to center position
           tl.to(parent, {
             x: layout.x,
             y: layout.y,
-            duration: 0.9,
+            duration: 0.65,
             ease: "power3.inOut",
             overwrite: "auto",
-          }, 0.25);
+            force3D: true,
+          }, 0.15);
 
           // Settle scale and rotation (front card: rotation is always 0)
           tl.to(card, {
             scale: layout.scale,
             rotation: 0,
-            duration: 0.9,
+            duration: 0.65,
             ease: "power3.inOut",
-          }, 0.25);
+            force3D: true,
+          }, 0.15);
 
         } else {
           // All other cards: kill competing tweens, then smooth glide to new position
@@ -383,8 +393,9 @@ export function HeroV2() {
           gsap.to(parent, {
             x: layout.x,
             y: layout.y,
-            duration: 1.1,
+            duration: 0.7,
             ease: "power3.inOut",
+            force3D: true,
           });
 
           gsap.to(card, {
@@ -392,29 +403,20 @@ export function HeroV2() {
             scale: layout.scale,
             opacity: layout.opacity,
             y: 0,
-            duration: 1.1,
+            duration: 0.7,
             ease: "power3.inOut",
+            force3D: true,
           });
         }
 
-        // Front card gets a special glow treatment
+        // Front card glow settle — CSS transition handles the shadow fade
         if (newIndex === 0) {
           const frame = card.querySelector("[data-polaroid-frame]") as HTMLElement;
           if (frame) {
-            gsap.fromTo(
-              frame,
-              {
-                boxShadow:
-                  "0 20px 60px rgba(196,169,104,0.25), 0 10px 25px rgba(74,55,40,0.15)",
-              },
-              {
-                boxShadow:
-                  "0 8px 30px rgba(74,55,40,0.12), 0 2px 8px rgba(74,55,40,0.08)",
-                duration: 1.8,
-                ease: "power2.out",
-                delay: 0.3,
-              }
-            );
+            // Brief glow, then settle back to default via CSS transition
+            setTimeout(() => {
+              frame.style.boxShadow = "";
+            }, 200);
           }
         }
       });
@@ -526,8 +528,8 @@ export function HeroV2() {
   // ============================================
 
   const handleCardMouseMove = useCallback((e: React.MouseEvent, momentId: string) => {
-    // Only apply 3D tilt on the active/front card
-    if (moments[0]?.id !== momentId) return;
+    // Only apply 3D tilt on the active/front card — skip on mobile
+    if (isMobileRef.current || moments[0]?.id !== momentId) return;
 
     const card = cardRefs.current.find((el) => el?.dataset.momentId === momentId);
     if (!card) return;
@@ -544,14 +546,15 @@ export function HeroV2() {
     gsap.to(card, {
       rotateX: tiltX,
       rotateY: tiltY,
-      duration: 0.4,
+      duration: 0.25,
       ease: "power2.out",
       overwrite: "auto",
+      force3D: true,
     });
 
     // Cursor glow
     if (glowRef.current) {
-      gsap.to(glowRef.current, { x, y, opacity: 1, duration: 0.4, ease: "power2.out" });
+      gsap.to(glowRef.current, { x, y, opacity: 1, duration: 0.25, ease: "power2.out" });
     }
   }, [moments]);
 
@@ -562,13 +565,14 @@ export function HeroV2() {
     gsap.to(card, {
       rotateX: 0,
       rotateY: 0,
-      duration: 1,
+      duration: 0.6,
       ease: "power3.out",
       overwrite: "auto",
+      force3D: true,
     });
 
     if (glowRef.current) {
-      gsap.to(glowRef.current, { opacity: 0, duration: 0.5 });
+      gsap.to(glowRef.current, { opacity: 0, duration: 0.35 });
     }
   }, []);
 
@@ -594,7 +598,6 @@ export function HeroV2() {
     const parent = card.parentElement!;
 
     gsap.killTweensOf(parent);
-    if (frame) gsap.killTweensOf(frame);
 
     gsap.set(parent, {
       transformOrigin: isLeft ? "100% 75%" : "0% 75%",
@@ -605,18 +608,15 @@ export function HeroV2() {
       x: layout.x + (isLeft ? -80 : 80),
       y: layout.y - 12,
       rotation: isLeft ? -10 : 10,
-      duration: 1.2,
+      duration: 0.75,
       ease: "power3.out",
       overwrite: true,
+      force3D: true,
     });
 
+    // CSS transition handles the shadow lift — no GSAP paint thrashing
     if (frame) {
-      gsap.to(frame, {
-        boxShadow: "0 25px 60px rgba(74,55,40,0.22), 0 10px 25px rgba(74,55,40,0.12)",
-        duration: 1.2,
-        ease: "power3.out",
-        overwrite: true,
-      });
+      frame.style.boxShadow = "0 25px 60px rgba(74,55,40,0.22), 0 10px 25px rgba(74,55,40,0.12)";
     }
   }, [stopBreathing, isMobile, isTablet]);
 
@@ -635,29 +635,25 @@ export function HeroV2() {
     const parent = card.parentElement!;
 
     gsap.killTweensOf(parent);
-    if (frame) gsap.killTweensOf(frame);
 
     // Single smooth return — all properties together
     gsap.to(parent, {
       x: layout.x,
       y: layout.y,
       rotation: 0,
-      duration: 0.5,
+      duration: 0.4,
       ease: "power3.inOut",
       overwrite: true,
+      force3D: true,
       onComplete: () => {
         gsap.set(parent, { transformOrigin: "50% 50%" });
         startBreathing();
       },
     });
 
+    // CSS transition handles the shadow settle
     if (frame) {
-      gsap.to(frame, {
-        boxShadow: "0 8px 30px rgba(74,55,40,0.12), 0 2px 8px rgba(74,55,40,0.08)",
-        duration: 0.5,
-        ease: "power3.inOut",
-        overwrite: true,
-      });
+      frame.style.boxShadow = "";
     }
   }, [isMobile, isTablet, startBreathing]);
 
@@ -676,7 +672,7 @@ export function HeroV2() {
         {
           keyframes: [
             { scale: 1.3, duration: 0.15, ease: "power2.out" },
-            { scale: 1, duration: 0.5, ease: "elastic.out(1, 0.4)" },
+            { scale: 1, duration: 0.5, ease: isMobileRef.current ? "power3.out" : "elastic.out(1, 0.4)" },
           ],
         }
       );
@@ -716,66 +712,81 @@ export function HeroV2() {
     const rows = marqueeRowRefs.current.filter(Boolean) as HTMLDivElement[];
     if (rows.length === 0) return;
 
-    const baseSpeeds = [-80, 50, -45, 60];
+    // Gentle base speeds — atmospheric drift, not a race
+    const baseSpeeds = [-30, 20, -18, 24];
     const positions = rows.map(() => 0);
     let speedMultiplier = 1;
     let targetMultiplier = 1;
-    let rafId: number;
-    let lastTime = 0;
-    let scrollDecayTimer: number;
+    let scrollDecayTimer: ReturnType<typeof setTimeout>;
 
-    const boost = (delta: number) => {
-      if (Math.abs(delta) > 1) {
-        const intensity = Math.min(Math.abs(delta) / 10, 5);
-        targetMultiplier = 1 + intensity * 1.5;
+    // Max scroll boost: 2× base speed — keeps it elegant
+    const MAX_MULTIPLIER = 2;
+
+    // Use GSAP ticker instead of raw RAF so marquee runs in the SAME
+    // animation frame as all other GSAP animations — no competing RAF budgets.
+    const handleWheel = (e: WheelEvent) => {
+      const intensity = Math.min(Math.abs(e.deltaY) / 50, 1);
+      if (intensity > 0.05) {
+        targetMultiplier = Math.min(1 + intensity, MAX_MULTIPLIER);
         clearTimeout(scrollDecayTimer);
-        scrollDecayTimer = window.setTimeout(() => {
-          targetMultiplier = 1;
-        }, 200);
+        scrollDecayTimer = setTimeout(() => { targetMultiplier = 1; }, 300);
       }
     };
-
-    let lastScrollY = window.scrollY;
-    const handleScroll = () => {
-      const currentY = window.scrollY;
-      boost(currentY - lastScrollY);
-      lastScrollY = currentY;
-    };
-    const handleWheel = (e: WheelEvent) => boost(e.deltaY);
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("wheel", handleWheel, { passive: true });
 
-    const tick = (time: number) => {
-      if (!lastTime) lastTime = time;
-      const dt = Math.min((time - lastTime) / 1000, 0.1);
-      lastTime = time;
+    // Track scroll velocity via scroll events
+    let lastScrollY = window.scrollY;
+    let lastScrollTime = performance.now();
+    const onScroll = () => {
+      const now = performance.now();
+      const elapsed = now - lastScrollTime;
+      if (elapsed > 0) {
+        const v = Math.abs(window.scrollY - lastScrollY) / (elapsed / 1000);
+        if (v > 50) {
+          const intensity = Math.min(v / 1000, 1);
+          targetMultiplier = Math.min(
+            Math.max(targetMultiplier, 1 + intensity),
+            MAX_MULTIPLIER
+          );
+          clearTimeout(scrollDecayTimer);
+          scrollDecayTimer = setTimeout(() => { targetMultiplier = 1; }, 300);
+        }
+      }
+      lastScrollY = window.scrollY;
+      lastScrollTime = now;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
 
-      speedMultiplier += (targetMultiplier - speedMultiplier) * 0.06;
+    // Cache halfWidths to avoid layout reads every frame
+    const halfWidths = rows.map((row) => row.scrollWidth / 2);
+
+    const tick = (_time: number, dt: number) => {
+      // dt is in seconds, provided by GSAP ticker directly — no subtraction needed
+      const safeDt = Math.min(dt, 0.1);
+
+      // Smooth lerp — 0.08 gives a gentle ease-in/ease-out feel
+      speedMultiplier += (targetMultiplier - speedMultiplier) * 0.08;
 
       rows.forEach((row, i) => {
         const speed = (baseSpeeds[i] || -40) * speedMultiplier;
-        positions[i] += speed * dt;
-
-        const halfWidth = row.scrollWidth / 2;
+        positions[i] += speed * safeDt;
+        const halfWidth = halfWidths[i];
         if (halfWidth > 0) {
           if (positions[i] < -halfWidth) positions[i] += halfWidth;
           if (positions[i] > 0) positions[i] -= halfWidth;
         }
-
+        // gsap.set inside the ticker runs in the same frame — no extra RAF
         gsap.set(row, { x: positions[i] });
       });
-
-      rafId = requestAnimationFrame(tick);
     };
 
-    rafId = requestAnimationFrame(tick);
+    gsap.ticker.add(tick);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      gsap.ticker.remove(tick);
       clearTimeout(scrollDecayTimer);
-      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("scroll", onScroll);
     };
   }, []);
 
@@ -783,9 +794,7 @@ export function HeroV2() {
   // Cinematic Entrance — elegant reveal
   // ============================================
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-
+  useGSAP(() => {
     // Delay card animation until header logo finishes (1.2s)
     const tl = gsap.timeline({ delay: 1.2 });
     const mobile = isMobileRef.current;
@@ -904,11 +913,7 @@ export function HeroV2() {
       spreadStart + 1.6
     );
 
-    return () => {
-      tl.kill();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, { scope: sectionRef });
 
 
 
@@ -1148,7 +1153,6 @@ export function HeroV2() {
           >
             {moments.map((moment, index) => {
               const universe = getUniverseById(moment.universeId);
-              const isHovered = hoveredId === moment.id;
               if (index >= maxVisible) return null;
 
               return (
@@ -1159,6 +1163,7 @@ export function HeroV2() {
                     zIndex: 20 - index,
                     willChange: "transform",
                     cursor: "pointer",
+                    perspective: "800px",
                   }}
                   onClick={() => bringToFront(moment.id)}
                   onMouseMove={(e) => handleCardMouseMove(e, moment.id)}
@@ -1195,7 +1200,7 @@ export function HeroV2() {
                     data-index={String(index)}
                     style={{
                       transformStyle: "preserve-3d",
-                      perspective: "800px",
+                      willChange: "transform, opacity",
                     }}
                   >
                     {/* Polaroid frame */}
@@ -1204,10 +1209,10 @@ export function HeroV2() {
                       className={cn(
                         "relative w-[200px] sm:w-[260px] md:w-[300px] bg-[#FAFAF8] border-2 border-primary/30 p-2 sm:p-3 md:p-3 pb-6 sm:pb-8 md:pb-5",
                         "shadow-[0_8px_30px_rgba(74,55,40,0.12),0_2px_8px_rgba(74,55,40,0.08)]",
-                        "transition-shadow duration-700 ease-out",
-                        isHovered &&
-                        "shadow-[0_20px_60px_rgba(74,55,40,0.22),0_8px_20px_rgba(74,55,40,0.15)]"
+                        // CSS transition for shadow — avoids per-frame paint from GSAP boxShadow tweens
+                        "transition-shadow duration-500 ease-out"
                       )}
+                      style={{ willChange: "box-shadow" }}
                     >
                       {/* Image */}
                       <div
@@ -1218,10 +1223,10 @@ export function HeroV2() {
                           src={moment.image}
                           alt={moment.title}
                           fill
-                          className={cn(
-                            "object-cover transition-transform duration-700 ease-out",
-                            isHovered && "scale-[1.03]"
-                          )}
+                          className="object-cover"
+                          // Removed CSS scale transition — GSAP handles card scale.
+                          // CSS transform transitions on child elements conflicted
+                          // with parent GSAP transforms causing jerk on card swap.
                           sizes="300px"
                           priority={index === 0}
                         />

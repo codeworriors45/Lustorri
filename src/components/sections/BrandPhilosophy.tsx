@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { Heart, Sparkles, Gem, Flame } from "lucide-react";
-import gsap from "gsap";
+import { gsap, useGSAP } from "@/lib/animations/gsap";
 import { LuxuryDiamond } from "@/components/common/LuxuryDiamond";
 
 const values = [
@@ -46,8 +46,8 @@ export function BrandPhilosophy() {
   const y = useTransform(scrollYProgress, [0, 1], [50, -50]);
   const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
 
-  // GSAP animation for title reveal
-  useEffect(() => {
+  // GSAP animation for title reveal — useGSAP handles cleanup
+  useGSAP(() => {
     if (isInView && titleRef.current) {
       const chars = titleRef.current.querySelectorAll(".char");
       gsap.fromTo(
@@ -63,7 +63,7 @@ export function BrandPhilosophy() {
         }
       );
     }
-  }, [isInView]);
+  }, { dependencies: [isInView] });
 
   // Split text into characters for animation
   const splitText = (text: string) => {

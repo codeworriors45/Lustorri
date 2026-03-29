@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo, useRef, useEffect, useCallback } from "react";
+import { useState, memo, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -11,7 +11,7 @@ import { useCart } from "@/store/useCartStore";
 import { useWishlist } from "@/hooks/useWishlist";
 import { cn } from "@/lib/utils";
 import { DEFAULT_BLUR_DATA_URL } from "@/lib/utils/image";
-import gsap from "gsap";
+import { gsap, useGSAP } from "@/lib/animations/gsap";
 
 interface ProductCardProps {
   product: Product;
@@ -34,11 +34,10 @@ export const ProductCard = memo(function ProductCard({ product, index = 0 }: Pro
   const discount = isOnSale ? Math.round(((comparePrice - lowestPrice) / comparePrice) * 100) : 0;
 
 
-  // GSAP animations
-  useEffect(() => {
+  // GSAP animations — useGSAP handles scoping + cleanup
+  useGSAP(() => {
     if (!cardRef.current) return;
 
-    // Initial reveal animation
     gsap.fromTo(
       cardRef.current,
       { opacity: 0, y: 40 },
@@ -50,7 +49,7 @@ export const ProductCard = memo(function ProductCard({ product, index = 0 }: Pro
         ease: "power3.out",
       }
     );
-  }, [index]);
+  }, { scope: cardRef, dependencies: [index] });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;

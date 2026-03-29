@@ -1,27 +1,20 @@
 "use client";
 
 import React, { useRef, useEffect, useCallback } from "react";
-import { gsap, ScrollTrigger } from "@/lib/animations/gsap";
+import { gsap, useGSAP, ScrollTrigger } from "@/lib/animations/gsap";
 
-// ============================================
-// Section 2 — Curtain Reveal → Image Sequence → Curtain Close
-// Mobile-optimised: normalizeScroll, stable vh, capped DPR, overscroll-none
-// ============================================
-
+const BAR_POSITIONS = [10, 30, 50, 70, 90];
+const LAYERS_PER_LINE = 3; // glow + medium + core per vertical section
 const FRAME_COUNT = 120;
-const FRAME_PATH = "/images/showcase/ezgif-frame-";
 
-function padFrame(n: number): string {
-  return String(n).padStart(3, "0");
-}
-function frameSrc(index: number): string {
-  return `${FRAME_PATH}${padFrame(index)}.png`;
+function getFrameSrc(index: number): string {
+  const num = String(Math.min(Math.max(index, 1), FRAME_COUNT)).padStart(3, "0");
+  return `/images/showcase/ezgif-frame-${num}.png`;
 }
 
-// ─── Stable viewport height ───────────────────────────────────────────────────
-// On mobile, 100vh changes when the address bar shows/hides.
-// We use window.innerHeight snapped once on mount and refreshed via
-// ScrollTrigger.refresh() so the pin height is always correct.
+// Stable viewport height — on mobile, 100vh changes when the address bar
+// shows/hides. We snapshot window.innerHeight once and refresh via
+// ScrollTrigger.refresh() so the pin height stays correct.
 function getStableVh(): number {
   return typeof window !== "undefined" ? window.innerHeight : 0;
 }
@@ -31,24 +24,18 @@ export function ShowcaseSection() {
   const pinContainerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const curtainLeftRef = useRef<HTMLDivElement>(null);
-  const curtainRightRef = useRef<HTMLDivElement>(null);
-  const goldLineRef = useRef<HTMLDivElement>(null);
-  const goldGlowRef = useRef<HTMLDivElement>(null);
-
   const imagesRef = useRef<HTMLImageElement[]>([]);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const currentFrameRef = useRef(-1);
   const canvasSizeRef = useRef({ w: 0, h: 0, dpr: 1 });
 
-  // ─── Canvas size setup ────────────────────────────────────────────────────
+  // ─── Canvas size setup ──────────────────────────────────────────────────
   const setupCanvasSize = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    // Cap DPR at 2 — devices with DPR 3+ (many Android flagship phones)
-    // spend GPU time rendering pixels the user can't distinguish. Capping
-    // keeps mobile canvas fast without visible quality loss.
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Cap DPR at 1 on mobile, 2 on desktop — mobile GPU can't handle 3x+
+    const isMobile = window.innerWidth < 768;
+    const dpr = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 2);
     const rect = canvas.getBoundingClientRect();
     if (
       canvasSizeRef.current.w === rect.width &&
@@ -59,6 +46,7 @@ export function ShowcaseSection() {
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
     canvasSizeRef.current = { w: rect.width, h: rect.height, dpr };
+    // alpha: false — opaque canvas is faster (no compositing with background)
     const ctx = canvas.getContext("2d", { alpha: false });
     if (ctx) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -66,7 +54,7 @@ export function ShowcaseSection() {
     }
   }, []);
 
-  // ─── Synchronous frame draw ────────────────────────────────────────────────
+  // ─── Synchronous frame draw ─────────────────────────────────────────────
   const drawFrame = useCallback((index: number) => {
     const ctx = ctxRef.current;
     const img = imagesRef.current[index];
@@ -91,7 +79,7 @@ export function ShowcaseSection() {
     ctx.drawImage(img, dX, dY, dW, dH);
   }, []);
 
-  // ─── Draw only when frame actually changes (no RAF wrapper) ───────────────
+  // ─── Draw only when frame actually changes (skip duplicate draws) ───────
   const requestDraw = useCallback(
     (index: number) => {
       if (index === currentFrameRef.current) return;
@@ -101,13 +89,13 @@ export function ShowcaseSection() {
     [drawFrame]
   );
 
-  // ─── Preload images ───────────────────────────────────────────────────────
+  // ─── Preload images ─────────────────────────────────────────────────────
   useEffect(() => {
     const images: HTMLImageElement[] = [];
     for (let i = 1; i <= FRAME_COUNT; i++) {
       const img = new Image();
       img.decoding = "sync";
-      img.src = frameSrc(i);
+      img.src = getFrameSrc(i);
       if (i === 1) {
         img.onload = () => {
           setupCanvasSize();
@@ -120,157 +108,237 @@ export function ShowcaseSection() {
     imagesRef.current = images;
   }, [setupCanvasSize, drawFrame]);
 
-  // ─── GSAP: curtain open → frames → curtain close ─────────────────────────
-  useEffect(() => {
+  // ─── GSAP: Lines → Circles → Showcase → Reverse ────────────────────────
+  useGSAP(() => {
     const frameProxy = { value: 0 };
     const pin = pinContainerRef.current;
     const section = sectionRef.current;
     if (!pin || !section) return;
 
-    // Set a stable pixel height on the pin container using window.innerHeight
-    // instead of CSS 100vh, which fluctuates on mobile as the address bar
-    // appears/disappears and breaks the ScrollTrigger end position.
+    // Stable pixel height — avoids mobile address bar flicker
     const stableH = getStableVh();
     pin.style.height = `${stableH}px`;
 
-    const ctx = gsap.context(() => {
-      const totalScroll = "+=450%";
+    const isMobile = window.innerWidth < 768;
+      // Mobile: shorter scroll distance — +=1200% requires too much touch
+      // scrolling and creates more scroll events for the GPU to process.
+      const totalScroll = isMobile ? "+=600%" : "+=1200%";
 
-      // ── Pinning ScrollTrigger ──────────────────────────────────────────────
-      ScrollTrigger.create({
-        trigger: section,
-        start: "top top",
-        end: totalScroll,
-        pin: pin,
-        pinSpacing: true,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-        // onRefresh: recalculate the stable height in case orientation changed
-        onRefresh() {
-          const h = getStableVh();
-          pin.style.height = `${h}px`;
-        },
-      });
+      const lines = gsap.utils.toArray(".gsap-line");
+      const circles = gsap.utils.toArray(".gsap-circle");
+      const showcaseEl = ".gsap-showcase";
+      const ambientGlows = gsap.utils.toArray(".gsap-ambient-glow");
 
-      // ── Animation timeline ─────────────────────────────────────────────────
+      // Single merged ScrollTrigger — two separate triggers (pin + timeline)
+      // cause double recalculation on every scroll event. Merging halves the
+      // per-frame overhead on mobile.
+      // scrub: true on mobile — Lenis already smooths the scroll, adding
+      // scrub delay creates "double smoothing" that reads as lag.
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: "top top",
           end: totalScroll,
-          scrub: true,         // instant 1:1 mapping — no lag on any platform
+          pin: pin,
+          pinSpacing: true,
+          anticipatePin: 1,
+          scrub: isMobile ? true : 0.5,
           invalidateOnRefresh: true,
+          fastScrollEnd: true,
+          preventOverlaps: true,
+          onRefresh() {
+            const h = getStableVh();
+            pin.style.height = `${h}px`;
+          },
         },
       });
 
-      // 0.00–0.04  gold line appears
+      // ─── 1. Entry: Lines drop in ──────────────────────────────────────
       tl.fromTo(
-        goldLineRef.current,
-        { scaleY: 0, opacity: 0 },
-        { scaleY: 1, opacity: 1, duration: 0.04, ease: "power2.out" },
-        0
-      );
-      tl.fromTo(
-        goldGlowRef.current,
-        { opacity: 0 },
-        { opacity: 1, duration: 0.04, ease: "power2.out" },
-        0
+        lines,
+        { yPercent: -100, opacity: 0 },
+        {
+          yPercent: 0,
+          opacity: 1,
+          duration: 1,
+          stagger: (i: number) => Math.floor(i / LAYERS_PER_LINE) * 0.1,
+          ease: "power2.out",
+        }
       );
 
-      // 0.04–0.14  curtains open
+      // ─── 2. Converge to Center ────────────────────────────────────────
+      // Mobile: use GPU-accelerated x transform (no layout reflow)
+      // Desktop: use left for pixel-perfect positioning
+      const parentW = pin.clientWidth;
+
+      if (isMobile) {
+        tl.to(
+          lines,
+          {
+            x: (i: number) => {
+              const pos = BAR_POSITIONS[Math.floor(i / LAYERS_PER_LINE)];
+              return (parentW * 0.5) - (parentW * pos / 100);
+            },
+            duration: 1,
+            ease: "power3.inOut",
+          },
+          "+=0.2"
+        );
+      } else {
+        tl.to(
+          lines,
+          { left: "50%", duration: 1, ease: "power3.inOut" },
+          "+=0.2"
+        );
+      }
+
+      // ─── 3. Transform to Circles ──────────────────────────────────────
       tl.to(
-        curtainLeftRef.current,
-        { xPercent: -100, duration: 0.10, ease: "power3.inOut" },
-        0.04
-      );
-      tl.to(
-        curtainRightRef.current,
-        { xPercent: 100, duration: 0.10, ease: "power3.inOut" },
-        0.04
-      );
-      tl.to(
-        goldLineRef.current,
-        { opacity: 0, duration: 0.06, ease: "power2.in" },
-        0.05
-      );
-      tl.to(
-        goldGlowRef.current,
-        { opacity: 0, duration: 0.06, ease: "power2.in" },
-        0.05
+        lines,
+        { scaleY: 0, opacity: 0, duration: 0.6, ease: "power2.inOut", transformOrigin: "center center" },
+        "+=0.2"
       );
 
-      // 0.14–0.76  image sequence
+      tl.fromTo(
+        circles,
+        { scale: 0, opacity: 0 },
+        { scale: 1, opacity: 1, duration: 1, stagger: 0.2, ease: "power2.out", force3D: true },
+        "<0.2"
+      );
+
+      // ─── 4. Zoom Out & Showcase Reveal ────────────────────────────────
+      tl.to(
+        circles,
+        { scale: 10, opacity: 0, duration: 1.5, ease: "power2.inOut", force3D: true },
+        "+=0.2"
+      );
+
+      // Immersive background fill flare as rings explode outward
+      tl.to(
+        ambientGlows,
+        { scale: 1.5, opacity: 0.8, duration: 1.5, ease: "power2.out" },
+        "<"
+      );
+
+      tl.fromTo(
+        showcaseEl,
+        { opacity: 0, scale: 1.2 },
+        { opacity: 1, scale: 1, duration: 1.5, ease: "power2.out" },
+        "<0.3"
+      );
+
+      // ─── 5. Image Sequence Playback (scroll-driven) ───────────────────
       tl.to(
         frameProxy,
         {
           value: FRAME_COUNT - 1,
-          duration: 0.62,
+          duration: 3,
           ease: "none",
           onUpdate() {
             requestDraw(Math.round(frameProxy.value));
           },
         },
-        0.14
+        "+=0.1"
       );
 
-      // 0.76–0.86  curtains close
+      // ─── 6. Hold Showcase (removed for instant responsive exit) ───────
+
+      // ─── 7. EXIT: Showcase fades, circles zoom back in ───────────────
       tl.to(
-        curtainLeftRef.current,
-        { xPercent: 0, duration: 0.10, ease: "power3.inOut" },
-        0.76
-      );
-      tl.to(
-        curtainRightRef.current,
-        { xPercent: 0, duration: 0.10, ease: "power3.inOut" },
-        0.76
+        showcaseEl,
+        { opacity: 0, scale: 1.2, duration: 1.5, ease: "power2.in" },
+        "+=0.0"
       );
 
-      // 0.86–0.90  gold line reappears
+      // Immersive background fill recedes smoothly
       tl.to(
-        goldLineRef.current,
-        { scaleY: 1, opacity: 1, duration: 0.04, ease: "power2.out" },
-        0.86
-      );
-      tl.to(
-        goldGlowRef.current,
-        { opacity: 1, duration: 0.04, ease: "power2.out" },
-        0.86
+        ambientGlows,
+        { scale: 1, opacity: 0.06, duration: 1.5, ease: "power2.inOut" },
+        "<0.3"
       );
 
-      // 0.90–0.95  gold line fades out
       tl.to(
-        goldLineRef.current,
-        { opacity: 0, duration: 0.05, ease: "power2.in" },
-        0.92
+        circles,
+        { scale: 1, opacity: 1, duration: 1.5, stagger: -0.2, ease: "power2.inOut" },
+        "<0"
       );
+
+      // ─── 8. EXIT: Circles shrink, lines reappear at center ───────────
       tl.to(
-        goldGlowRef.current,
-        { opacity: 0, duration: 0.05, ease: "power2.in" },
-        0.92
+        circles,
+        { scale: 0, opacity: 0, duration: 1, stagger: -0.2, ease: "power2.in" },
+        "+=0.2"
       );
-    }, sectionRef);
 
-    return () => ctx.revert();
-  }, [requestDraw]);
+      tl.to(
+        lines,
+        { scaleY: 1, opacity: 1, duration: 0.6, ease: "power2.inOut" },
+        "<0.2"
+      );
 
-  // ─── Resize / orientation-change handler ─────────────────────────────────
+      // ─── 9. EXIT: Lines spread back to original positions ────────────
+      if (isMobile) {
+        // Reset x transform back to 0 — lines return to their CSS left positions
+        tl.to(
+          lines,
+          { x: 0, duration: 1, ease: "power3.inOut" },
+          "+=0.2"
+        );
+      } else {
+        tl.to(
+          lines,
+          {
+            left: (i: number) => `${BAR_POSITIONS[Math.floor(i / LAYERS_PER_LINE)]}%`,
+            duration: 1,
+            ease: "power3.inOut",
+          },
+          "+=0.2"
+        );
+      }
+
+      // ─── 10. EXIT: Lines slide up and fade out ───────────────────────
+      tl.to(
+        lines,
+        {
+          yPercent: -100,
+          opacity: 0,
+          duration: 1,
+          stagger: (i: number) => (4 - Math.floor(i / LAYERS_PER_LINE)) * 0.1,
+          ease: "power2.in",
+        },
+        "+=0.2"
+      );
+  }, { scope: sectionRef, dependencies: [requestDraw] });
+
+  // ─── Resize / orientation-change handler ────────────────────────────────
+  // Debounced — on mobile, the URL bar show/hide fires resize events dozens
+  // of times per second during scroll. Calling ScrollTrigger.refresh() on
+  // each one bypasses ignoreMobileResize and forces full page recalculation
+  // mid-animation. We wait 200ms after resizing stops before refreshing.
   useEffect(() => {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
     const onResize = () => {
+      // Canvas + pin height can update immediately (cheap operations)
       setupCanvasSize();
       if (currentFrameRef.current >= 0) drawFrame(currentFrameRef.current);
-      // Recompute the stable height and refresh triggers when orientation changes
       if (pinContainerRef.current) {
         pinContainerRef.current.style.height = `${getStableVh()}px`;
       }
-      ScrollTrigger.refresh();
+
+      // Debounce the expensive ScrollTrigger.refresh()
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 200);
     };
 
     window.addEventListener("resize", onResize, { passive: true });
-    // orientationchange fires on mobile before resize sometimes
     window.addEventListener("orientationchange", onResize, { passive: true });
     return () => {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
+      if (debounceTimer) clearTimeout(debounceTimer);
     };
   }, [setupCanvasSize, drawFrame]);
 
@@ -280,28 +348,57 @@ export function ShowcaseSection() {
       className="relative w-full"
       style={{
         zIndex: 1,
-        // Prevent overscroll bounce on iOS from interfering with the pin
         overscrollBehavior: "none",
-        // Use dvh (dynamic viewport height) as CSS fallback where supported;
-        // the JS stable height above overrides this once JS runs
         minHeight: "100dvh",
+        // Prevent horizontal swipe gestures from interfering with vertical scroll pin
+        touchAction: "pan-y",
       }}
     >
       <div
         ref={pinContainerRef}
-        className="relative w-full overflow-hidden"
+        className="relative w-full overflow-hidden bg-[#0A0A0A]"
         style={{
-          height: "100dvh", // dvh = dynamic viewport height (accounts for mobile bars)
+          height: "100dvh",
         }}
       >
-        {/* Dark background */}
+        {/* Subtle ambient noise texture overlay */}
         <div
-          className="absolute inset-0"
-          style={{ background: "#0a0a0a", zIndex: 0 }}
+          className="absolute inset-0 z-[1]"
+          style={{
+            background: "repeating-conic-gradient(rgba(212,175,55,0.015) 0% 25%, transparent 0% 50%) 0 0 / 4px 4px",
+            mixBlendMode: "overlay",
+            pointerEvents: "none",
+          }}
         />
 
-        {/* Canvas layer */}
-        <div className="absolute inset-0" style={{ zIndex: 1 }}>
+        {/* Ambient radial warm glow */}
+        <div
+          className="gsap-ambient-glow absolute inset-0 z-[1]"
+          style={{
+            background: "radial-gradient(ellipse at 50% 50%, rgba(196,169,104,0.06) 0%, rgba(196,169,104,0.02) 30%, transparent 65%)",
+            pointerEvents: "none",
+            transformOrigin: "center center",
+            willChange: "transform, opacity",
+          }}
+        />
+
+        {/* Floor reflection glow */}
+        <div
+          className="gsap-ambient-glow absolute bottom-0 left-0 w-full z-[1]"
+          style={{
+            height: "35%",
+            background: "radial-gradient(ellipse at 50% 100%, rgba(196,169,104,0.08) 0%, rgba(140,120,70,0.03) 40%, transparent 70%)",
+            pointerEvents: "none",
+            transformOrigin: "bottom center",
+            willChange: "transform, opacity",
+          }}
+        />
+
+        {/* Showcase Canvas (Bottom Layer) — 120 frame sequence */}
+        <div
+          className="gsap-showcase absolute inset-0 w-full h-full opacity-0 origin-center z-[2]"
+          style={{ willChange: "transform, opacity" }}
+        >
           <canvas
             ref={canvasRef}
             className="absolute inset-0 w-full h-full"
@@ -309,67 +406,105 @@ export function ShowcaseSection() {
           />
         </div>
 
-        {/* Curtains + gold line */}
-        <div
-          className="absolute inset-0"
-          style={{ zIndex: 2, pointerEvents: "none" }}
-        >
-          {/* Left curtain */}
-          <div
-            ref={curtainLeftRef}
-            className="absolute top-0 left-0 h-full"
-            style={{
-              width: "50%",
-              background: "#0a0a0a",
-              willChange: "transform",
-              // translateZ forces GPU compositing layer — critical on mobile
-              transform: "translateZ(0)",
-            }}
-          />
-          {/* Right curtain */}
-          <div
-            ref={curtainRightRef}
-            className="absolute top-0 right-0 h-full"
-            style={{
-              width: "50%",
-              background: "#0a0a0a",
-              willChange: "transform",
-              transform: "translateZ(0)",
-            }}
-          />
+        {/* Animation GUI Layer (Top Layer) */}
+        <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
 
-          {/* Gold line */}
-          <div
-            ref={goldLineRef}
-            className="absolute top-0 left-1/2"
-            style={{
-              width: "2px",
-              height: "100%",
-              marginLeft: "-1px",
-              background:
-                "linear-gradient(180deg, transparent 0%, #C4A968 15%, #E8D5A3 50%, #C4A968 85%, transparent 100%)",
-              transformOrigin: "center",
-              opacity: 0,
-              willChange: "transform, opacity",
-              transform: "translateZ(0)",
-            }}
-          />
+          {/* 5 Vertical Gold/Cream Lines — with glow layers
+              Mobile: blur filters are removed — they force expensive per-frame
+              repaints during scroll. Instead we use wider/softer gradient widths
+              and lower opacity to simulate the glow without filter: blur(). */}
+          {BAR_POSITIONS.map((pos, i) => {
+            const mobile = typeof window !== "undefined" && window.innerWidth < 768;
+            return (
+            <React.Fragment key={i}>
+              {/* Wide soft glow behind each line */}
+              <div
+                className="gsap-line absolute top-0 h-full"
+                style={{
+                  left: `${pos}%`,
+                  width: mobile ? "40px" : "30px",
+                  marginLeft: mobile ? "-20px" : "-15px",
+                  background: mobile
+                    ? "radial-gradient(ellipse at center, rgba(212,175,55,0.08) 0%, transparent 70%)"
+                    : "linear-gradient(180deg, rgba(212,175,55,0.12) 0%, rgba(245,230,200,0.06) 50%, rgba(212,175,55,0.12) 100%)",
+                  filter: mobile ? undefined : "blur(8px)",
+                }}
+              />
+              {/* Medium glow */}
+              <div
+                className="gsap-line absolute top-0 h-full"
+                style={{
+                  left: `${pos}%`,
+                  width: mobile ? "12px" : "8px",
+                  marginLeft: mobile ? "-6px" : "-4px",
+                  background: mobile
+                    ? "linear-gradient(180deg, rgba(212,175,55,0.25) 0%, rgba(245,230,200,0.15) 50%, rgba(212,175,55,0.25) 100%)"
+                    : "linear-gradient(180deg, rgba(212,175,55,0.4) 0%, rgba(245,230,200,0.25) 50%, rgba(212,175,55,0.4) 100%)",
+                  filter: mobile ? undefined : "blur(3px)",
+                }}
+              />
+              {/* Core bright line */}
+              <div
+                className="gsap-line absolute top-0 h-full"
+                style={{
+                  left: `${pos}%`,
+                  width: "2px",
+                  marginLeft: "-1px",
+                  background: "linear-gradient(180deg, #b8944e 0%, #f5e6c8 20%, #fffaf0 50%, #f5e6c8 80%, #b8944e 100%)",
+                  boxShadow: mobile ? "0 0 4px rgba(245,230,200,0.4)" : "0 0 6px rgba(245,230,200,0.5), 0 0 15px rgba(212,175,55,0.3)",
+                }}
+              />
+            </React.Fragment>
+            );
+          })}
 
-          {/* Gold glow */}
-          <div
-            ref={goldGlowRef}
-            className="absolute top-0 left-1/2"
-            style={{
-              width: "80px",
-              height: "100%",
-              marginLeft: "-40px",
-              background:
-                "radial-gradient(ellipse at center, rgba(196,169,104,0.15) 0%, transparent 70%)",
-              opacity: 0,
-              willChange: "opacity",
-            }}
-          />
+          {/* Circular Cream/Gold Rings */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
+
+            {/* Ring ambient glow */}
+            <div
+              className="gsap-circle absolute rounded-full opacity-0"
+              style={{
+                width: "500px",
+                height: "500px",
+                background: "radial-gradient(circle, rgba(212,175,55,0.12) 0%, rgba(196,169,104,0.05) 40%, transparent 70%)",
+              }}
+            />
+
+            {/* Outer Gold Ring */}
+            <div
+              className="gsap-circle absolute rounded-full opacity-0"
+              style={{
+                width: "400px",
+                height: "400px",
+                border: "3px solid rgba(212,175,55,0.7)",
+                boxShadow:
+                  "0 0 15px rgba(212,175,55,0.4), 0 0 40px rgba(212,175,55,0.15), 0 0 80px rgba(196,169,104,0.08), inset 0 0 15px rgba(212,175,55,0.1), inset 0 0 40px rgba(196,169,104,0.05)",
+              }}
+            />
+
+            {/* Inner Cream/White Ring */}
+            <div
+              className="gsap-circle absolute rounded-full opacity-0"
+              style={{
+                width: "300px",
+                height: "300px",
+                border: "2px solid rgba(245,230,200,0.85)",
+                boxShadow:
+                  "0 0 12px rgba(245,230,200,0.5), 0 0 30px rgba(245,230,200,0.2), 0 0 60px rgba(212,175,55,0.1), inset 0 0 12px rgba(245,230,200,0.15), inset 0 0 30px rgba(212,175,55,0.05)",
+              }}
+            />
+          </div>
+
         </div>
+
+        {/* Cinematic vignette */}
+        <div
+          className="absolute inset-0 z-[11] pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.4) 100%)",
+          }}
+        />
       </div>
     </section>
   );

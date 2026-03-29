@@ -1,17 +1,37 @@
 "use client";
 
 import { gsap } from "gsap";
+import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 // Register GSAP plugins
 if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
+  gsap.registerPlugin(useGSAP, ScrollTrigger);
+
+  // 60fps-guaranteed defaults
+  gsap.defaults({
+    force3D: true,    // GPU acceleration on all tweens
+    lazy: false,      // Render immediately — no deferred first-render
+  });
+
+  // Do NOT enable normalizeScroll — Lenis (in SmoothScroll.tsx) handles
+  // scroll normalisation. Enabling both causes them to fight over scroll
+  // position, resulting in lag and dropped frames.
+
+  // Reduce ScrollTrigger overhead from mobile address bar resize events
+  ScrollTrigger.config({
+    ignoreMobileResize: true,
+  });
 }
 
 // Default animation configurations
 export const defaultEase = "power3.out";
 export const smoothEase = "power2.inOut";
-export const elasticEase = "elastic.out(1, 0.5)";
+// Smooth weighted easing — per Stitch design system (no bouncy/elastic on mobile)
+export const elasticEase =
+  typeof window !== "undefined" && window.innerWidth < 768
+    ? "power3.out"
+    : "elastic.out(1, 0.5)";
 
 // Reusable animation presets
 export const fadeInUp = {
@@ -58,7 +78,7 @@ export const createParallax = (
       trigger: element,
       start: "top bottom",
       end: "bottom top",
-      scrub: true,
+      scrub: 0.5,
     },
   });
 };
@@ -117,4 +137,4 @@ export const createMagneticEffect = (
   };
 };
 
-export { gsap, ScrollTrigger };
+export { gsap, useGSAP, ScrollTrigger };

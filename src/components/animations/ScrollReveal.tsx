@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useEffect, ReactNode } from "react";
+import { useRef, ReactNode } from "react";
 import { motion, useInView, Variants } from "framer-motion";
-import { gsap, ScrollTrigger } from "@/lib/animations/gsap";
+import { gsap, useGSAP } from "@/lib/animations/gsap";
 
 interface ScrollRevealProps {
   children: ReactNode;
@@ -12,7 +12,7 @@ interface ScrollRevealProps {
   duration?: number;
   once?: boolean;
   threshold?: number;
-  useGSAP?: boolean;
+  gsapMode?: boolean;
   parallaxSpeed?: number;
 }
 
@@ -52,7 +52,7 @@ export function ScrollReveal({
   once = true,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   threshold = 0.1,
-  useGSAP = false,
+  gsapMode = false,
   parallaxSpeed = 0.3,
 }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -61,52 +61,45 @@ export function ScrollReveal({
     margin: "-100px" as const
   });
 
-  // GSAP parallax effect
-  useEffect(() => {
-    if (useGSAP && animation === "parallax" && ref.current) {
-      const element = ref.current;
+  // GSAP parallax effect — useGSAP handles scoping + cleanup automatically
+  useGSAP(() => {
+    if (!gsapMode || animation !== "parallax" || !ref.current) return;
 
-      gsap.fromTo(
-        element,
-        { y: 100, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: element,
-            start: "top 80%",
-            end: "bottom 20%",
-            toggleActions: "play none none reverse",
-          },
-        }
-      );
+    const element = ref.current;
 
-      // Add parallax on scroll
-      gsap.to(element, {
-        yPercent: parallaxSpeed * -50,
-        ease: "none",
+    gsap.fromTo(
+      element,
+      { y: 100, opacity: 0 },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 1,
+        ease: "power3.out",
         scrollTrigger: {
           trigger: element,
-          start: "top bottom",
-          end: "bottom top",
-          scrub: true,
+          start: "top 80%",
+          end: "bottom 20%",
+          toggleActions: "play none none reverse",
         },
-      });
+      }
+    );
 
-      return () => {
-        ScrollTrigger.getAll().forEach((trigger) => {
-          if (trigger.vars.trigger === element) {
-            trigger.kill();
-          }
-        });
-      };
-    }
-  }, [useGSAP, animation, parallaxSpeed]);
+    // Add parallax on scroll (use higher scrub value on mobile for smoother feel)
+    const isMobile = window.innerWidth < 768;
+    gsap.to(element, {
+      yPercent: parallaxSpeed * (isMobile ? -25 : -50),
+      ease: "none",
+      scrollTrigger: {
+        trigger: element,
+        start: "top bottom",
+        end: "bottom top",
+        scrub: isMobile ? 1.5 : 0.5,
+      },
+    });
+  }, { scope: ref, dependencies: [gsapMode, animation, parallaxSpeed] });
 
   // Use Framer Motion for non-GSAP animations
-  if (!useGSAP) {
+  if (!gsapMode) {
     return (
       <motion.div
         ref={ref}
